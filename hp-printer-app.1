@@ -1,0 +1,71 @@
+.\"
+.\" HP Printer Application man page
+.\"
+.\" Copyright © 2020 by Michael R Sweet
+.\"
+.\" Licensed under Apache License v2.0.  See the file "LICENSE" for more
+.\" information.
+.\"
+.TH hp-printer-app 1 "hp-printer-app" "2020-07-10" "Michael R Sweet"
+.SH NAME
+hp-printer-app \- hp printer application
+.SH SYNOPSIS
+.B hp-printer-app
+[
+.I SUB-COMMAND
+] [ OPTIONS ] [ FILES ]
+.SH DESCRIPTION
+.B hp-printer-app
+is a printer application that can be run standalone or as a dedicated IPP Everywhere network service.
+.B hp-printer-app
+supports printing JPEG images, PNG images, Apple/PWG raster files, and printer-specific files to USB and network PCL printers.
+If no sub-command is specified, "submit" is assumed.
+.SH SUB-COMMANDS
+The following sub-commands are recognized by
+.B hp-printer-app:
+.TP 5
+add
+Add a printer queue.
+.TP 5
+cancel
+Cancel one or more print jobs.
+.TP 5
+default
+Set the default printer queue.
+.TP 5
+delete
+Delete a printer queue.
+.TP 5
+devices
+List connected printers.
+.TP 5
+drivers
+List the supported drivers.
+.TP 5
+jobs
+List pending print jobs.
+.TP 5
+modify
+Modify a printer queue.
+.TP 5
+options
+List supported options.
+.TP 5
+printers
+List the printer queues.
+.TP 5
+server
+Start a server.
+.TP 5
+shutdown
+Shutdown a running server.
+.TP 5
+status
+Show the status of a printer or all printers.
+.TP 5
+submit
+Submit a file for printing.
+.SH SEE ALSO
+https://www.msweet.org/hp-printer-app
+.SH COPYRIGHT
+Copyright \[co] 2020 by Michael R Sweet.
