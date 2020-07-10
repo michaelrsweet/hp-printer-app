@@ -17,9 +17,9 @@ mandir		=	$(prefix)/share/man
 
 
 # Compiler/linker options...
-CFLAGS		:=	`pkg-config --cflags cups` `pkg-config --cflags pappl`
-LDFLAGS		:=	`pkg-config --ldflags cups` `pkg-config --ldflags pappl`
-LIBS		:=	`pkg-config --libs cups` `pkg-config --libs pappl`
+CFLAGS		+=	`pkg-config --cflags cups` `pkg-config --cflags pappl`
+LDFLAGS		+=	`pkg-config --ldflags cups` `pkg-config --ldflags pappl`
+LIBS		+=	`pkg-config --libs cups` `pkg-config --libs pappl`
 
 
 # Targets...
