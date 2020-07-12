@@ -18,12 +18,12 @@
 // Types...
 //
 
-typedef struct pcl_s            // Job data
+typedef struct pcl_s			// Job data
 {
-  unsigned char *planes[4],     // Output buffers
-		  *comp_buffer;   // Compression buffer
-  unsigned 	  num_planes,     // Number of color planes
-		  feed;           // Number of lines to skip
+  unsigned char	*planes[4],		// Output buffers
+		*comp_buffer;		// Compression buffer
+  unsigned	num_planes,		// Number of color planes
+		feed;			// Number of lines to skip
 } pcl_t;
 
 
@@ -98,9 +98,6 @@ static bool   pcl_rstartpage(pappl_job_t *job, pappl_poptions_t *options, pappl_
 static bool   pcl_rwrite(pappl_job_t *job, pappl_poptions_t *options, pappl_device_t *device, unsigned y, const unsigned char *pixels);
 static void   pcl_setup(pappl_system_t *system);
 static bool   pcl_status(pappl_printer_t *printer);
-#ifndef HAVE_STRLCPY
-  static size_t strlcpy(char *dst, const char *src, size_t dstsize);
-#endif // !HAVE_STRLCPY
 static pappl_system_t   *system_cb(int num_options, cups_option_t *options, void *data);
 
 
@@ -161,7 +158,7 @@ pcl_callback(
 
   if (!strcmp(driver_name, "hp_deskjet"))
   {
-    strlcpy(driver_data->make_and_model, "HP DeskJet", sizeof(driver_data->make_and_model));
+    strncpy(driver_data->make_and_model, "HP DeskJet", sizeof(driver_data->make_and_model) - 1);
 
     driver_data->num_resolution  = 3;
     driver_data->x_resolution[0] = 150;
@@ -208,7 +205,7 @@ pcl_callback(
   }
   else if (!strcmp(driver_name, "hp_generic"))
   {
-    strlcpy(driver_data->make_and_model, "Generic PCL Laser Printer", sizeof(driver_data->make_and_model));
+    strncpy(driver_data->make_and_model, "Generic PCL Laser Printer", sizeof(driver_data->make_and_model) - 1);
 
     driver_data->num_resolution  = 2;
     driver_data->x_resolution[0] = 300;
@@ -251,7 +248,7 @@ pcl_callback(
   }
   else if (!strcmp(driver_name, "hp_laserjet"))
   {
-   strlcpy(driver_data->make_and_model, "HP LaserJet", sizeof(driver_data->make_and_model));
+   strncpy(driver_data->make_and_model, "HP LaserJet", sizeof(driver_data->make_and_model) - 1);
 
     driver_data->num_resolution  = 3;
     driver_data->x_resolution[0] = 150;
@@ -737,28 +734,28 @@ pcl_rstartpage(
 // 'pcl_rwrite()' - Write a line.
 //
 
-static bool                         // O - `true` on success, `false` on failure
+static bool				// O - `true` on success, `false` on failure
 pcl_rwrite(
-    pappl_job_t         *job,       // I - Job
-    pappl_poptions_t    *options,   // I - Job options
-    pappl_device_t      *device,    // I - Device
-    unsigned            y,          // I - Line number
-    const unsigned char *pixels)      // I - Line
+    pappl_job_t         *job,		// I - Job
+    pappl_poptions_t    *options,	// I - Job options
+    pappl_device_t      *device,	// I - Device
+    unsigned            y,		// I - Line number
+    const unsigned char *pixels)	// I - Line
 {
-  cups_page_header2_t   *header = &(options->header);
-                                    // Page header
-  pcl_t           *pcl = (pcl_t *)papplJobGetData(job);
-                                    // Job data
-  unsigned	          plane,      // Current plane
-		          bytes,      // Bytes to write
-		          x;          // Current column
-  unsigned char	  bit,	    // Current plane data
-		          *pixptr,// Pixel pointer in line
-		          *cptr,      // Pointer into c-plane
-		          *mptr,      // Pointer into m-plane
-		          *yptr,      // Pointer into y-plane
-		          *kptr,      // Pointer into k-plane
-		          byte;      // Byte in line
+  cups_page_header2_t	*header = &(options->header);
+					// Page header
+  pcl_t			*pcl = (pcl_t *)papplJobGetData(job);
+					// Job data
+  unsigned		plane,		// Current plane
+			bytes,		// Bytes to write
+			x;		// Current column
+  const unsigned char	*pixptr;	// Pixel pointer in line
+  unsigned char		bit,		// Current plane data
+			*cptr,		// Pointer into c-plane
+			*mptr,		// Pointer into m-plane
+			*yptr,		// Pointer into y-plane
+			*kptr,		// Pointer into k-plane
+			byte;		// Byte in line
   const unsigned char	*dither;	// Dither line
 
 
@@ -933,34 +930,6 @@ pcl_status(
 
   return (true);
 }
-
-
-//
-// 'strlcpy()' - Safely copy a C string.
-//
-
-#ifndef HAVE_STRLCPY
-static size_t
-strlcpy(char       *dst,		// I - Destination buffer
-               const char *src,		// I - Source string
-               size_t     dstsize)	// I - Destination size
-{
-  size_t srclen = strlen(src);		// Length of source string
-
-
-  // Copy up to dstsize - 1 bytes
-  dstsize --;
-
-  if (srclen > dstsize)
-    srclen = dstsize;
-
-  memmove(dst, src, srclen);
-
-  dst[srclen] = '\0';
-
-  return (srclen);
-}
-#endif // !HAVE_STRLCPY
 
 
 //

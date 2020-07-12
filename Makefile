@@ -17,9 +17,10 @@ mandir		=	$(prefix)/share/man
 
 
 # Compiler/linker options...
-CFLAGS		+=	`pkg-config --cflags cups` `pkg-config --cflags pappl`
-LDFLAGS		+=	`pkg-config --ldflags cups` `pkg-config --ldflags pappl`
-LIBS		+=	`pkg-config --libs cups` `pkg-config --libs pappl`
+OPTIM		=	-Os -g
+CFLAGS		+=	`pkg-config --cflags pappl` $(OPTIM)
+LDFLAGS		+=	$(OPTIM)
+LIBS		+=	`pkg-config --libs pappl`
 
 
 # Targets...
