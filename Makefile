@@ -14,6 +14,7 @@ includedir	=	$(prefix)/include
 bindir		=	$(prefix)/bin
 libdir		=	$(prefix)/lib
 mandir		=	$(prefix)/share/man
+unitdir 	:=	`pkg-config --variable=systemdsystemunitdir systemd`
 
 
 # Compiler/linker options...
@@ -45,6 +46,10 @@ install:	$(TARGETS)
 	cp $(TARGETS) $(bindir)
 	mkdir -p $(mandir)/man1
 	cp hp-printer-app.1 $(mandir)/man1
+	if test "x$(unitdir)" != x; then \
+	mkdir -p $(unitdir); \
+	cp hp-printer-app.service $(unitdir); \
+	fi
 
 hp-printer-app:	$(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)

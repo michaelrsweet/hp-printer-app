@@ -1,0 +1,10 @@
+[Unit]
+Description=HP Printer Application
+
+[Service]
+ExecStart=hp-printer-app server
+ExecStop=hp-printer-app shutdown
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
