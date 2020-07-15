@@ -31,7 +31,7 @@ cancel
 Cancel one or more print jobs.
 .TP 5
 default
-Set the default printer queue.
+Get/Set the default printer queue.
 .TP 5
 delete
 Delete a printer queue.
@@ -65,6 +65,39 @@ Show the status of a printer or all printers.
 .TP 5
 submit
 Submit a file for printing.
+.SH OPTIONS
+The following options are recognized by
+.B hp-printer-app:
+.TP 5
+-a
+Cancel all jobs.
+.TP 5
+-d PRINTER
+Specify printer.
+.TP 5
+-h HOST
+Specify hostname.
+.TP 5
+-j JOB-ID
+Specify job ID.
+.TP 5
+-m DRIVER-NAME
+Specify driver.
+.TP 5
+-n COPIES
+Specify number of copies.
+.TP 5
+-o NAME=VALUE
+Specify option.
+.TP 5
+-t TITLE
+Specify job title.
+.TP 5
+-u URI
+Specify ipp: or ipps: printer/server.
+.TP 5
+-v DEVICE-URI
+Specify socket: or usb: device.
 .SH SEE ALSO
 https://www.msweet.org/hp-printer-app
 .SH COPYRIGHT
