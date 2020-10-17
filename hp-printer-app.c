@@ -31,6 +31,13 @@ typedef struct pcl_s			// Job data
 // Local globals...
 //
 
+static pappl_driver_t pcl_drivers[] =   // Driver information
+{
+  { "hp_deskjet",	"HP Deskjet",	NULL },
+  { "hp_generic",	"Generic PCL",	NULL },
+  { "hp_laserjet",	"HP LaserJet",	NULL }
+};
+
 static const char * const pcl_hp_deskjet_media[] =
 {       // Supported media sizes for HP Deskjet printers
   "na_letter_8.5x11in",
@@ -108,7 +115,7 @@ int
 main(int  argc,				// I - Number of command-line arguments
      char *argv[])			// I - Command-line arguments
 {
-  papplMainloop(argc, argv, "1.0", NULL, NULL, NULL, NULL, NULL, NULL);
+  papplMainloop(argc, argv, "1.0", (int)(sizeof(pcl_drivers) / sizeof(pcl_drivers[0])), pcl_drivers, pcl_callback, NULL, NULL, NULL, NULL, NULL, NULL);
   return (0);
 }
 
@@ -861,32 +868,6 @@ pcl_rwrite(
     pcl->feed ++;
 
   return (true);
-}
-
-
-//
-// 'pcl_setup()' - Setup PCL drivers.
-//
-
-static void
-pcl_setup(
-    pappl_system_t *system)      // I - System
-{
-  static const char * const names[] =   // Driver names
-  {
-    "hp_deskjet",
-    "hp_generic",
-    "hp_laserjet"
-  };
-
-  static const char * const desc[] =    // Driver descriptions
-  {
-    "HP Deskjet",
-    "Generic PCL",
-    "HP Laserjet"
-  };
-
-  papplSystemSetPrintDrivers(system, (int)(sizeof(names) / sizeof(names[0])), names, desc, pcl_callback, "hp_printer_app");
 }
 
 
