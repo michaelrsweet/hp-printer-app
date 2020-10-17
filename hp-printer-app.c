@@ -87,18 +87,17 @@ static const char * const pcl_hp_laserjet_media[] =
 // Local functions...
 //
 
-static bool   pcl_callback(pappl_system_t *system, const char *driver_name, const char *device_uri, pappl_pdriver_data_t *driver_data, ipp_t **driver_attrs, void *data);
+static bool   pcl_callback(pappl_system_t *system, const char *driver_name, const char *device_uri, pappl_driver_data_t *driver_data, ipp_t **driver_attrs, void *data);
 static void   pcl_compress_data(pappl_job_t *job, pappl_device_t *device, unsigned char *line, unsigned length, unsigned plane, unsigned type);
 static void   pcl_identify(pappl_printer_t *printer, pappl_identify_actions_t actions, const char *message);
-static bool   pcl_print(pappl_job_t *job, pappl_poptions_t *options, pappl_device_t *device);
-static bool   pcl_rendjob(pappl_job_t *job, pappl_poptions_t *options, pappl_device_t *device);
-static bool   pcl_rendpage(pappl_job_t *job, pappl_poptions_t *options, pappl_device_t *device, unsigned page);
-static bool   pcl_rstartjob(pappl_job_t *job, pappl_poptions_t *options, pappl_device_t *device);
-static bool   pcl_rstartpage(pappl_job_t *job, pappl_poptions_t *options, pappl_device_t *device, unsigned page);
-static bool   pcl_rwrite(pappl_job_t *job, pappl_poptions_t *options, pappl_device_t *device, unsigned y, const unsigned char *pixels);
+static bool   pcl_print(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device);
+static bool   pcl_rendjob(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device);
+static bool   pcl_rendpage(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device, unsigned page);
+static bool   pcl_rstartjob(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device);
+static bool   pcl_rstartpage(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device, unsigned page);
+static bool   pcl_rwrite(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device, unsigned y, const unsigned char *pixels);
 static void   pcl_setup(pappl_system_t *system);
 static bool   pcl_status(pappl_printer_t *printer);
-static pappl_system_t   *system_cb(int num_options, cups_option_t *options, void *data);
 
 
 //
@@ -109,7 +108,7 @@ int
 main(int  argc,				// I - Number of command-line arguments
      char *argv[])			// I - Command-line arguments
 {
-  papplMainloop(argc, argv, "1.0", NULL, NULL, NULL, system_cb, "hp_printer_app");
+  papplMainloop(argc, argv, "1.0", NULL, NULL, NULL, NULL, NULL, NULL);
   return (0);
 }
 
@@ -123,7 +122,7 @@ pcl_callback(
     pappl_system_t       *system,	   // I - System
     const char           *driver_name,   // I - Driver name
     const char           *device_uri,	   // I - Device URI
-    pappl_pdriver_data_t *driver_data,   // O - Driver data
+    pappl_driver_data_t *driver_data,   // O - Driver data
     ipp_t                **driver_attrs, // O - Driver attributes
     void                 *data)	   // I - Callback data
 {
@@ -455,7 +454,7 @@ pcl_identify(
 static bool                           // O - `true` on success, `false` on failure
 pcl_print(
     pappl_job_t      *job,            // I - Job
-    pappl_poptions_t *options,        // I - Options
+    pappl_joptions_t *options,        // I - Options
     pappl_device_t   *device)         // I - Device
 {
   int		       infd;	        // Input file
@@ -492,7 +491,7 @@ pcl_print(
 static bool                     // O - `true` on success, `false` on failure
 pcl_rendjob(
     pappl_job_t      *job,      // I - Job
-    pappl_poptions_t *options,  // I - Options
+    pappl_joptions_t *options,  // I - Options
     pappl_device_t   *device)   // I - Device
 {
   pcl_t	       *pcl = (pcl_t *)papplJobGetData(job);
@@ -515,7 +514,7 @@ pcl_rendjob(
 static bool                     // O - `true` on success, `false` on failure
 pcl_rendpage(
     pappl_job_t      *job,      // I - Job
-    pappl_poptions_t *options,  // I - Job options
+    pappl_joptions_t *options,  // I - Job options
     pappl_device_t   *device,   // I - Device
     unsigned         page)      // I - Page number
 {
@@ -560,7 +559,7 @@ pcl_rendpage(
 static bool                     // O - `true` on success, `false` on failure
 pcl_rstartjob(
     pappl_job_t      *job,      // I - Job
-    pappl_poptions_t *options,  // I - Job options
+    pappl_joptions_t *options,  // I - Job options
     pappl_device_t   *device)   // I - Device
 {
   pcl_t        *pcl = (pcl_t *)calloc(1, sizeof(pcl_t));
@@ -584,7 +583,7 @@ pcl_rstartjob(
 static bool                      // O - `true` on success, `false` on failure
 pcl_rstartpage(
     pappl_job_t       *job,       // I - Job
-    pappl_poptions_t  *options,   // I - Job options
+    pappl_joptions_t  *options,   // I - Job options
     pappl_device_t    *device,    // I - Device
     unsigned          page)       // I - Page number
 {
@@ -737,7 +736,7 @@ pcl_rstartpage(
 static bool				// O - `true` on success, `false` on failure
 pcl_rwrite(
     pappl_job_t         *job,		// I - Job
-    pappl_poptions_t    *options,	// I - Job options
+    pappl_joptions_t    *options,	// I - Job options
     pappl_device_t      *device,	// I - Device
     unsigned            y,		// I - Line number
     const unsigned char *pixels)	// I - Line
@@ -929,86 +928,4 @@ pcl_status(
   }
 
   return (true);
-}
-
-
-//
-// 'system_cb()' - System callback.
-//
-
-pappl_system_t *			// O - New system object
-system_cb(int           num_options,	// I - Number of options
-	  cups_option_t *options,	// I - Options
-	  void          *data)		// I - Callback data
-{
-  pappl_system_t	*system;	// System object
-  const char		*val,		// Current option value
-			*hostname,	// Hostname, if any
-			*logfile,	// Log file, if any
-			*system_name;	// System name, if any
-  pappl_loglevel_t	loglevel;	// Log level
-  int			port = 0;	// Port number, if any
-  pappl_soptions_t	soptions = PAPPL_SOPTIONS_MULTI_QUEUE | PAPPL_SOPTIONS_STANDARD | PAPPL_SOPTIONS_LOG | PAPPL_SOPTIONS_NETWORK | PAPPL_SOPTIONS_SECURITY | PAPPL_SOPTIONS_TLS;
-					// System options
-  static pappl_version_t versions[1] =	// Software versions
-  {
-    { "HP Printer App", "", "1.0", { 1, 0, 0, 0 } }
-  };
-
-
-  // Parse options...
-  if ((val = cupsGetOption("log-level", num_options, options)) != NULL)
-  {
-    if (!strcmp(val, "fatal"))
-      loglevel = PAPPL_LOGLEVEL_FATAL;
-    else if (!strcmp(val, "error"))
-      loglevel = PAPPL_LOGLEVEL_ERROR;
-    else if (!strcmp(val, "warn"))
-      loglevel = PAPPL_LOGLEVEL_WARN;
-    else if (!strcmp(val, "info"))
-      loglevel = PAPPL_LOGLEVEL_INFO;
-    else if (!strcmp(val, "debug"))
-      loglevel = PAPPL_LOGLEVEL_DEBUG;
-    else
-    {
-      fprintf(stderr, "hp_printer_app: Bad log-level value '%s'.\n", val);
-      return (NULL);
-    }
-  }
-  else
-    loglevel = PAPPL_LOGLEVEL_UNSPEC;
-
-  logfile     = cupsGetOption("log-file", num_options, options);
-  hostname    = cupsGetOption("server-hostname", num_options, options);
-  system_name = cupsGetOption("system-name", num_options, options);
-
-  if ((val = cupsGetOption("server-port", num_options, options)) != NULL)
-  {
-    if (!isdigit(*val & 255))
-    {
-      fprintf(stderr, "hp_printer_app: Bad server-port value '%s'.\n", val);
-      return (NULL);
-    }
-    else
-      port = atoi(val);
-  }
-
-  // Create the system object...
-  if ((system = papplSystemCreate(soptions, system_name ? system_name : "HP Printer app", port, "_print,_universal", cupsGetOption("spool-directory", num_options, options), logfile ? logfile : "-", loglevel, cupsGetOption("auth-service", num_options, options), /* tls_only */false)) == NULL)
-    return (NULL);
-
-  papplSystemAddListeners(system, NULL);
-  papplSystemSetHostname(system, hostname);
-  pcl_setup(system);
-
-  papplSystemSetFooterHTML(system,
-                           "Copyright &copy; 2020 by Michael R Sweet. "
-                           "Provided under the terms of the <a href=\"https://www.apache.org/licenses/LICENSE-2.0\">Apache License 2.0</a>.");
-  papplSystemSetSaveCallback(system, (pappl_save_cb_t)papplSystemSaveState, (void *)"/tmp/hp_printer_app.state");
-  papplSystemSetVersions(system, (int)(sizeof(versions) / sizeof(versions[0])), versions);
-
-  if (!papplSystemLoadState(system, "/tmp/hp_printer_app.state"))
-    papplSystemSetDNSSDName(system, system_name ? system_name : "HP Printer app");
-
-  return (system);
 }
