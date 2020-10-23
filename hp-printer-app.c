@@ -115,7 +115,7 @@ int
 main(int  argc,				// I - Number of command-line arguments
      char *argv[])			// I - Command-line arguments
 {
-  papplMainloop(argc, argv, "1.0", (int)(sizeof(pcl_drivers) / sizeof(pcl_drivers[0])), pcl_drivers, pcl_callback, NULL, NULL, NULL, NULL, NULL, NULL);
+  papplMainloop(argc, argv, "1.0", NULL, (int)(sizeof(pcl_drivers) / sizeof(pcl_drivers[0])), pcl_drivers, pcl_callback, NULL, NULL, NULL, NULL, NULL, NULL);
   return (0);
 }
 
@@ -879,10 +879,7 @@ static bool                   // O - `true` on success, `false` on failure
 pcl_status(
     pappl_printer_t *printer) // I - Printer
 {
-  char	driver_name[256];     // Driver name
-
-
-  if (!strcmp(papplPrinterGetDriverName(printer, driver_name, sizeof(driver_name)), "hp_deskjet"))
+  if (!strcmp(papplPrinterGetDriverName(printer), "hp_deskjet"))
   {
     static pappl_supply_t supply[5] =	// Supply level data
     {
