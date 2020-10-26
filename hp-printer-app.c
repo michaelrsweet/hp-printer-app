@@ -32,10 +32,10 @@ typedef struct pcl_s			// Job data
 //
 
 static pappl_driver_t pcl_drivers[] =   // Driver information
-{
-  { "hp_deskjet",	"HP Deskjet",	NULL },
-  { "hp_generic",	"Generic PCL",	NULL },
-  { "hp_laserjet",	"HP LaserJet",	NULL }
+{   /* name */          /* description */	/* device ID */	/* extension */
+  { "hp_deskjet",	"HP Deskjet",		NULL,		NULL },
+  { "hp_generic",	"Generic PCL",		"CMD:PCL;",	NULL },
+  { "hp_laserjet",	"HP LaserJet",		NULL,		NULL }
 };
 
 static const char * const pcl_hp_deskjet_media[] =
@@ -94,15 +94,15 @@ static const char * const pcl_hp_laserjet_media[] =
 // Local functions...
 //
 
+static const char *pcl_autoadd(const char *device_info, const char *device_uri, const char *device_id, void *data);
 static bool   pcl_callback(pappl_system_t *system, const char *driver_name, const char *device_uri, pappl_driver_data_t *driver_data, ipp_t **driver_attrs, void *data);
 static void   pcl_compress_data(pappl_job_t *job, pappl_device_t *device, unsigned char *line, unsigned length, unsigned plane, unsigned type);
-static void   pcl_identify(pappl_printer_t *printer, pappl_identify_actions_t actions, const char *message);
 static bool   pcl_print(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device);
 static bool   pcl_rendjob(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device);
 static bool   pcl_rendpage(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device, unsigned page);
 static bool   pcl_rstartjob(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device);
 static bool   pcl_rstartpage(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device, unsigned page);
-static bool   pcl_rwrite(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device, unsigned y, const unsigned char *pixels);
+static bool   pcl_rwriteline(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device, unsigned y, const unsigned char *pixels);
 static void   pcl_setup(pappl_system_t *system);
 static bool   pcl_status(pappl_printer_t *printer);
 
@@ -115,8 +115,62 @@ int
 main(int  argc,				// I - Number of command-line arguments
      char *argv[])			// I - Command-line arguments
 {
-  papplMainloop(argc, argv, "1.0", NULL, (int)(sizeof(pcl_drivers) / sizeof(pcl_drivers[0])), pcl_drivers, pcl_callback, NULL, NULL, NULL, NULL, NULL, NULL);
-  return (0);
+  return (papplMainloop(argc, argv,
+                        /*version*/"1.0",
+                        /*footer_html*/NULL,
+                        (int)(sizeof(pcl_drivers) / sizeof(pcl_drivers[0])),
+                        pcl_drivers, pcl_callback, pcl_autoadd,
+                        /*subcmd_name*/NULL, /*subcmd_cb*/NULL,
+                        /*system_cb*/NULL,
+                        /*usage_cb*/NULL,
+                        /*data*/NULL));
+}
+
+
+//
+// 'pcl_autoadd()' - Auto-add PCL printers.
+//
+
+static const char *			// O - Driver name or `NULL` for none
+pcl_autoadd(const char *device_info,	// I - Device name
+            const char *device_uri,	// I - Device URI
+            const char *device_id,	// I - IEEE-1284 device ID
+            void       *data)		// I - Callback data (not used)
+{
+  const char	*ret = NULL;		// Return value
+  int		num_did;		// Number of device ID key/value pairs
+  cups_option_t	*did;			// Device ID key/value pairs
+  const char	*cmd,			// Command set value
+		*pcl;			// PCL command set pointer
+
+
+  // Parse the IEEE-1284 device ID to see if this is a printer we support...
+  num_did = papplDeviceParse1284ID(device_id, &did);
+
+  // Look at the COMMAND SET (CMD) key for the list of printer languages,,,
+  if ((cmd = cupsGetOption("COMMAND SET", num_did, did)) == NULL)
+    cmd = cupsGetOption("CMD", num_did, did);
+
+  if (cmd && (pcl = strstr(cmd, "PCL")) != NULL && (pcl[3] == ',' || !pcl[3]))
+  {
+    // Printer supports HP PCL, now look at the MODEL (MDL) string to see if
+    // it is one of the HP models or a generic PCL printer...
+    const char *mdl;			// Model name string
+
+    if ((mdl = cupsGetOption("MODEL", num_did, did)) == NULL)
+      mdl = cupsGetOption("MDL", num_did, did);
+
+    if (mdl && (strstr(mdl, "DeskJet") || strstr(mdl, "Photosmart")))
+      ret = "hp_deskjet";		// HP DeskJet/Photosmart printer
+    else if (mdl && strstr(mdl, "LaserJet"))
+      ret = "hp_laserjet";		// HP LaserJet printer
+    else
+      ret = "hp_generic";		// Some other PCL laser printer
+  }
+
+  cupsFreeOptions(num_did, did);
+
+  return (ret);
 }
 
 
@@ -124,43 +178,32 @@ main(int  argc,				// I - Number of command-line arguments
 // 'pcl_callback()' - PCL callback.
 //
 
-static bool				   // O - `true` on success, `false` on failure
+static bool				// O - `true` on success, `false` on failure
 pcl_callback(
-    pappl_system_t       *system,	   // I - System
-    const char           *driver_name,   // I - Driver name
-    const char           *device_uri,	   // I - Device URI
-    pappl_driver_data_t *driver_data,   // O - Driver data
-    ipp_t                **driver_attrs, // O - Driver attributes
-    void                 *data)	   // I - Callback data
+    pappl_system_t      *system,	// I - System
+    const char          *driver_name,	// I - Driver name
+    const char          *device_uri,	// I - Device URI (not used)
+    pappl_driver_data_t *driver_data,	// O - Driver data
+    ipp_t               **driver_attrs,	// O - Driver attributes (not used)
+    void                *data)		// I - Callback data (not used)
 {
-  int   i;                               // Looping variable
+  int   i;				// Looping variable
 
 
-  if (!driver_name || !device_uri || !driver_data || !driver_attrs)
-  {
-    papplLog(system, PAPPL_LOGLEVEL_ERROR, "Driver callback called without required information.");
-    return (false);
-  }
+  (void)data;
+  (void)device_uri;
+  (void)driver_attrs;
 
-  if (!data || strcmp((const char *)data, "hp_printer_app"))
-  {
-    papplLog(system, PAPPL_LOGLEVEL_ERROR, "Driver callback called with bad data pointer.");
-    return (false);
-  }
-
-  driver_data->identify           = pcl_identify;
-  driver_data->identify_default   = PAPPL_IDENTIFY_ACTIONS_SOUND;
-  driver_data->identify_supported = PAPPL_IDENTIFY_ACTIONS_DISPLAY | PAPPL_IDENTIFY_ACTIONS_SOUND;
-  driver_data->print              = pcl_print;
-  driver_data->rendjob            = pcl_rendjob;
-  driver_data->rendpage           = pcl_rendpage;
-  driver_data->rstartjob          = pcl_rstartjob;
-  driver_data->rstartpage         = pcl_rstartpage;
-  driver_data->rwrite             = pcl_rwrite;
-  driver_data->status             = pcl_status;
-  driver_data->format             = "application/vnd.hp-postscript";
-  driver_data->orient_default     = IPP_ORIENT_NONE;
-  driver_data->quality_default    = IPP_QUALITY_NORMAL;
+  driver_data->print           = pcl_print;
+  driver_data->rendjob         = pcl_rendjob;
+  driver_data->rendpage        = pcl_rendpage;
+  driver_data->rstartjob       = pcl_rstartjob;
+  driver_data->rstartpage      = pcl_rstartpage;
+  driver_data->rwriteline      = pcl_rwriteline;
+  driver_data->status          = pcl_status;
+  driver_data->format          = "application/vnd.hp-postscript";
+  driver_data->orient_default  = IPP_ORIENT_NONE;
+  driver_data->quality_default = IPP_QUALITY_NORMAL;
 
   if (!strcmp(driver_name, "hp_deskjet"))
   {
@@ -434,23 +477,6 @@ pcl_compress_data(
 
   papplDevicePrintf(device, "\033*b%d%c", (int)(line_end - line_ptr), plane);
   papplDeviceWrite(device, line_ptr, (size_t)(line_end - line_ptr));
-}
-
-
-//
-// 'pcl_identify()' - Identify the printer.
-//
-
-static void
-pcl_identify(
-    pappl_printer_t          *printer,	// I - Printer
-    pappl_identify_actions_t actions, 	// I - Actions to take
-    const char               *message)	// I - Message, if any
-{
-  (void)printer;
-  (void)actions;
-
-  // Identify a printer using display, flash, sound or speech.
 }
 
 
@@ -737,11 +763,11 @@ pcl_rstartpage(
 
 
 //
-// 'pcl_rwrite()' - Write a line.
+// 'pcl_rwriteline()' - Write a line.
 //
 
 static bool				// O - `true` on success, `false` on failure
-pcl_rwrite(
+pcl_rwriteline(
     pappl_job_t         *job,		// I - Job
     pappl_joptions_t    *options,	// I - Job options
     pappl_device_t      *device,	// I - Device
