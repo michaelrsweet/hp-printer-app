@@ -40,53 +40,51 @@ static pappl_driver_t pcl_drivers[] =   // Driver information
 
 static const char * const pcl_hp_deskjet_media[] =
 {       // Supported media sizes for HP Deskjet printers
-  "na_letter_8.5x11in",
   "na_legal_8.5x14in",
-  "executive_7x10in",
-  "na_tabloid_11x17in",
-  "iso_a3_11.7x16.5in",
-  "iso_a4_8.3x11.7in",
-  "iso_a5_5.8x8.3in",
-  "jis_b5_7.2x10.1in",
-  "env_b5_6.9x9.8in",
-  "env_10_4.125x9.5in",
-  "env_c5_6.4x9in",
-  "env_dl_8.66x4.33in",
-  "env_monarch_3.875x7.5in"
+  "na_letter_8.5x11in",
+  "na_executive_7x10in",
+  "iso_a4_210x297mm",
+  "iso_a5_148x210mm",
+  "jis_b5_182x257mm",
+  "iso_b5_176x250mm",
+  "na_number-10_4.125x9.5in",
+  "iso_c5_162x229mm",
+  "iso_dl_110x220mm",
+  "na_monarch_3.875x7.5in"
 };
 
 static const char * const pcl_generic_pcl_media[] =
 {       // Supported media sizes for Generic PCL printers
-  "na_letter_8.5x11in",
+  "na_ledger_11x17in",
   "na_legal_8.5x14in",
-  "executive_7x10in",
-  "na_tabloid_11x17in",
-  "iso_a3_11.7x16.5in",
-  "iso_a4_8.3x11.7in",
-  "iso_a5_5.8x8.3in",
-  "jis_b5_7.2x10.1in",
-  "env_b5_6.9x9.8in",
-  "env_10_4.125x9.5in",
-  "env_c5_6.4x9in",
-  "env_dl_8.66x4.33in",
-  "env_monarch_3.875x7.5in"
+  "na_letter_8.5x11in",
+  "na_executive_7x10in",
+  "iso_a3_297x420mm"
+  "iso_a4_210x297mm",
+  "iso_a5_148x210mm",
+  "jis_b5_182x257mm",
+  "iso_b5_176x250mm",
+  "na_number-10_4.125x9.5in",
+  "iso_c5_162x229mm",
+  "iso_dl_110x220mm",
+  "na_monarch_3.875x7.5in"
 };
 
 static const char * const pcl_hp_laserjet_media[] =
 {       // Supported media sizes for HP Laserjet printers
-  "na_letter_8.5x11in",
+  "na_ledger_11x17in",
   "na_legal_8.5x14in",
-  "executive_7x10in",
-  "na_tabloid_11x17in",
-  "iso_a3_11.7x16.5in",
-  "iso_a4_8.3x11.7in",
-  "iso_a5_5.8x8.3in",
-  "jis_b5_7.2x10.1in",
-  "env_b5_6.9x9.8in",
-  "env_10_4.125x9.5in",
-  "env_c5_6.4x9in",
-  "env_dl_8.66x4.33in",
-  "env_monarch_3.875x7.5in"
+  "na_letter_8.5x11in",
+  "na_executive_7x10in",
+  "iso_a3_297x420mm"
+  "iso_a4_210x297mm",
+  "iso_a5_148x210mm",
+  "jis_b5_182x257mm",
+  "iso_b5_176x250mm",
+  "na_number-10_4.125x9.5in",
+  "iso_c5_162x229mm",
+  "iso_dl_110x220mm",
+  "na_monarch_3.875x7.5in"
 };
 
 
@@ -201,13 +199,15 @@ pcl_callback(
   driver_data->rstartpage      = pcl_rstartpage;
   driver_data->rwriteline      = pcl_rwriteline;
   driver_data->status          = pcl_status;
-  driver_data->format          = "application/vnd.hp-postscript";
+  driver_data->format          = "application/vnd.hp-pcl";
   driver_data->orient_default  = IPP_ORIENT_NONE;
   driver_data->quality_default = IPP_QUALITY_NORMAL;
 
   if (!strcmp(driver_name, "hp_deskjet"))
   {
     strncpy(driver_data->make_and_model, "HP DeskJet", sizeof(driver_data->make_and_model) - 1);
+    driver_data->ppm       = 8;
+    driver_data->ppm_color = 2;
 
     driver_data->num_resolution  = 3;
     driver_data->x_resolution[0] = 150;
@@ -255,6 +255,7 @@ pcl_callback(
   else if (!strcmp(driver_name, "hp_generic"))
   {
     strncpy(driver_data->make_and_model, "Generic PCL Laser Printer", sizeof(driver_data->make_and_model) - 1);
+    driver_data->ppm = 10;
 
     driver_data->num_resolution  = 2;
     driver_data->x_resolution[0] = 300;
@@ -298,6 +299,7 @@ pcl_callback(
   else if (!strcmp(driver_name, "hp_laserjet"))
   {
    strncpy(driver_data->make_and_model, "HP LaserJet", sizeof(driver_data->make_and_model) - 1);
+    driver_data->ppm = 10;
 
     driver_data->num_resolution  = 3;
     driver_data->x_resolution[0] = 150;
