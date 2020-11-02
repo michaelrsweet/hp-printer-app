@@ -31,7 +31,7 @@ typedef struct pcl_s			// Job data
 // Local globals...
 //
 
-static pappl_driver_t pcl_drivers[] =   // Driver information
+static pappl_pr_driver_t pcl_drivers[] =   // Driver information
 {   /* name */          /* description */	/* device ID */	/* extension */
   { "hp_deskjet",	"HP Deskjet",		NULL,		NULL },
   { "hp_generic",	"Generic PCL",		"CMD:PCL;",	NULL },
@@ -93,14 +93,14 @@ static const char * const pcl_hp_laserjet_media[] =
 //
 
 static const char *pcl_autoadd(const char *device_info, const char *device_uri, const char *device_id, void *data);
-static bool   pcl_callback(pappl_system_t *system, const char *driver_name, const char *device_uri, pappl_driver_data_t *driver_data, ipp_t **driver_attrs, void *data);
+static bool   pcl_callback(pappl_system_t *system, const char *driver_name, const char *device_uri, pappl_pr_driver_data_t *driver_data, ipp_t **driver_attrs, void *data);
 static void   pcl_compress_data(pappl_job_t *job, pappl_device_t *device, unsigned char *line, unsigned length, unsigned plane, unsigned type);
-static bool   pcl_print(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device);
-static bool   pcl_rendjob(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device);
-static bool   pcl_rendpage(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device, unsigned page);
-static bool   pcl_rstartjob(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device);
-static bool   pcl_rstartpage(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device, unsigned page);
-static bool   pcl_rwriteline(pappl_job_t *job, pappl_joptions_t *options, pappl_device_t *device, unsigned y, const unsigned char *pixels);
+static bool   pcl_print(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
+static bool   pcl_rendjob(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
+static bool   pcl_rendpage(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device, unsigned page);
+static bool   pcl_rstartjob(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
+static bool   pcl_rstartpage(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device, unsigned page);
+static bool   pcl_rwriteline(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device, unsigned y, const unsigned char *pixels);
 static void   pcl_setup(pappl_system_t *system);
 static bool   pcl_status(pappl_printer_t *printer);
 
@@ -178,12 +178,15 @@ pcl_autoadd(const char *device_info,	// I - Device name
 
 static bool				// O - `true` on success, `false` on failure
 pcl_callback(
-    pappl_system_t      *system,	// I - System
-    const char          *driver_name,	// I - Driver name
-    const char          *device_uri,	// I - Device URI (not used)
-    pappl_driver_data_t *driver_data,	// O - Driver data
-    ipp_t               **driver_attrs,	// O - Driver attributes (not used)
-    void                *data)		// I - Callback data (not used)
+    pappl_system_t         *system,	// I - System
+    const char             *driver_name,
+					// I - Driver name
+    const char             *device_uri,// I - Device URI (not used)
+    pappl_pr_driver_data_t *driver_data,
+					// O - Driver data
+    ipp_t                  **driver_attrs,
+					// O - Driver attributes (not used)
+    void                   *data)	// I - Callback data (not used)
 {
   int   i;				// Looping variable
 
@@ -192,13 +195,13 @@ pcl_callback(
   (void)device_uri;
   (void)driver_attrs;
 
-  driver_data->print           = pcl_print;
-  driver_data->rendjob         = pcl_rendjob;
-  driver_data->rendpage        = pcl_rendpage;
-  driver_data->rstartjob       = pcl_rstartjob;
-  driver_data->rstartpage      = pcl_rstartpage;
-  driver_data->rwriteline      = pcl_rwriteline;
-  driver_data->status          = pcl_status;
+  driver_data->printfile_cb    = pcl_print;
+  driver_data->rendjob_cb      = pcl_rendjob;
+  driver_data->rendpage_cb     = pcl_rendpage;
+  driver_data->rstartjob_cb    = pcl_rstartjob;
+  driver_data->rstartpage_cb   = pcl_rstartpage;
+  driver_data->rwriteline_cb   = pcl_rwriteline;
+  driver_data->status_cb       = pcl_status;
   driver_data->format          = "application/vnd.hp-pcl";
   driver_data->orient_default  = IPP_ORIENT_NONE;
   driver_data->quality_default = IPP_QUALITY_NORMAL;
@@ -378,98 +381,98 @@ pcl_callback(
 
 static void
 pcl_compress_data(
-    pappl_job_t    *job,        // I - Job object
-    pappl_device_t *device,     // I - Device
-    unsigned char  *line,       // I - Data to compress
-    unsigned       length,      // I - Number of bytes
-    unsigned       plane,       // I - Color plane
-    unsigned       type)        // I - Type of compression
+    pappl_job_t    *job,		// I - Job object
+    pappl_device_t *device,		// I - Device
+    unsigned char  *line,		// I - Data to compress
+    unsigned       length,		// I - Number of bytes
+    unsigned       plane,		// I - Color plane
+    unsigned       type)		// I - Type of compression
 {
-  unsigned char    *line_ptr,   // Current byte pointer
-                   *line_end,   // End-of-line byte pointer
-                   *comp_ptr,   // Pointer into compression buffer
-                   *start;      // Start of compression sequence
-  unsigned         count;       // Count of bytes for output
-  pcl_t      *pcl = (pcl_t *)papplJobGetData(job);
-                                // Job data
+  unsigned char	*line_ptr,		// Current byte pointer
+		*line_end,		// End-of-line byte pointer
+		*comp_ptr,		// Pointer into compression buffer
+		*start;			// Start of compression sequence
+  unsigned	count;			// Count of bytes for output
+  pcl_t		*pcl = (pcl_t *)papplJobGetData(job);
+					// Job data
 
 
   switch (type)
   {
     default : // No compression...
-      line_ptr = line;
-      line_end = line + length;
-      break;
+	line_ptr = line;
+	line_end = line + length;
+	break;
 
     case 1 :  // Do run-length encoding...
-      line_end = line + length;
-      for (line_ptr = line, comp_ptr = pcl->comp_buffer; line_ptr < line_end; comp_ptr += 2, line_ptr += count)
-      {
-        count = 1;
-        while ((line_ptr + count) < line_end && line_ptr[0] == line_ptr[count] && count < 256)
-          count ++;
+	line_end = line + length;
+	for (line_ptr = line, comp_ptr = pcl->comp_buffer; line_ptr < line_end; comp_ptr += 2, line_ptr += count)
+	{
+	  count = 1;
+	  while ((line_ptr + count) < line_end && line_ptr[0] == line_ptr[count] && count < 256)
+	    count ++;
 
-        comp_ptr[0] = (unsigned char)(count - 1);
-        comp_ptr[1] = line_ptr[0];
-      }
+	  comp_ptr[0] = (unsigned char)(count - 1);
+	  comp_ptr[1] = line_ptr[0];
+	}
 
-      line_ptr = pcl->comp_buffer;
-      line_end = comp_ptr;
-      break;
+	line_ptr = pcl->comp_buffer;
+	line_end = comp_ptr;
+	break;
 
     case 2 :  // Do TIFF pack-bits encoding...
-      line_ptr = line;
-      line_end = line + length;
-      comp_ptr = pcl->comp_buffer;
+	line_ptr = line;
+	line_end = line + length;
+	comp_ptr = pcl->comp_buffer;
 
-      while (line_ptr < line_end)
-      {
-        if ((line_ptr + 1) >= line_end)
-        {
-          // Single byte on the end...
+	while (line_ptr < line_end)
+	{
+	  if ((line_ptr + 1) >= line_end)
+	  {
+	    // Single byte on the end...
 
-          *comp_ptr++ = 0x00;
-          *comp_ptr++ = *line_ptr++;
-        }
-        else if (line_ptr[0] == line_ptr[1])
-        {
-          // Repeated sequence...
+	    *comp_ptr++ = 0x00;
+	    *comp_ptr++ = *line_ptr++;
+	  }
+	  else if (line_ptr[0] == line_ptr[1])
+	  {
+	    // Repeated sequence...
 
-          line_ptr ++;
-          count = 2;
+	    line_ptr ++;
+	    count = 2;
 
-          while (line_ptr < (line_end - 1) && line_ptr[0] == line_ptr[1] && count < 127)
-          {
-            line_ptr ++;
-            count ++;
-          }
-
-          *comp_ptr++ = (unsigned char)(257 - count);
-          *comp_ptr++ = *line_ptr++;
-        }
-        else
-        {
-          // Non-repeated sequence...
-
-          start    = line_ptr;
-          line_ptr ++;
-          count    = 1;
-
-          while (line_ptr < (line_end - 1) && line_ptr[0] != line_ptr[1] && count < 127)
-          {
-            line_ptr ++;
-            count ++;
-          }
-
-          *comp_ptr++ = (unsigned char)(count - 1);
-
-          memcpy(comp_ptr, start, count);
-          comp_ptr += count;
-        }
+	    while (line_ptr < (line_end - 1) && line_ptr[0] == line_ptr[1] && count < 127)
+	    {
+	      line_ptr ++;
+	      count ++;
 	    }
 
-      line_ptr = pcl->comp_buffer;
-      line_end = comp_ptr;
+	    *comp_ptr++ = (unsigned char)(257 - count);
+	    *comp_ptr++ = *line_ptr++;
+	  }
+	  else
+	  {
+	    // Non-repeated sequence...
+
+	    start    = line_ptr;
+	    line_ptr ++;
+	    count    = 1;
+
+	    while (line_ptr < (line_end - 1) && line_ptr[0] != line_ptr[1] && count < 127)
+	    {
+	      line_ptr ++;
+	      count ++;
+	    }
+
+	    *comp_ptr++ = (unsigned char)(count - 1);
+
+	    memcpy(comp_ptr, start, count);
+	    comp_ptr += count;
+	  }
+	}
+
+	line_ptr = pcl->comp_buffer;
+	line_end = comp_ptr;
 	break;
   }
 
@@ -486,32 +489,32 @@ pcl_compress_data(
 // 'pcl_print()' - Print file.
 //
 
-static bool                           // O - `true` on success, `false` on failure
+static bool				// O - `true` on success, `false` on failure
 pcl_print(
-    pappl_job_t      *job,            // I - Job
-    pappl_joptions_t *options,        // I - Options
-    pappl_device_t   *device)         // I - Device
+    pappl_job_t      *job,		// I - Job
+    pappl_pr_options_t *options,		// I - Options
+    pappl_device_t   *device)		// I - Device
 {
-  int		       infd;	        // Input file
-  ssize_t	       bytes;	        // Bytes read/written
-  char	       buffer[65536];	// Read/write buffer
+  int		fd;			// Job file
+  ssize_t	bytes;			// Bytes read/written
+  char		buffer[65536];		// Read/write buffer
 
 
   papplJobSetImpressions(job, 1);
 
-  infd  = open(papplJobGetFilename(job), O_RDONLY);
+  fd = open(papplJobGetFilename(job), O_RDONLY);
 
-  while ((bytes = read(infd, buffer, sizeof(buffer))) > 0)
+  while ((bytes = read(fd, buffer, sizeof(buffer))) > 0)
   {
     if (papplDeviceWrite(device, buffer, (size_t)bytes) < 0)
     {
       papplLogJob(job, PAPPL_LOGLEVEL_ERROR, "Unable to send %d bytes to printer.", (int)bytes);
-      close(infd);
+      close(fd);
       return (false);
     }
   }
 
-  close(infd);
+  close(fd);
 
   papplJobSetImpressionsCompleted(job, 1);
 
@@ -523,14 +526,14 @@ pcl_print(
 // 'pcl_rendjob()' - End a job.
 //
 
-static bool                     // O - `true` on success, `false` on failure
+static bool				// O - `true` on success, `false` on failure
 pcl_rendjob(
-    pappl_job_t      *job,      // I - Job
-    pappl_joptions_t *options,  // I - Options
-    pappl_device_t   *device)   // I - Device
+    pappl_job_t      *job,		// I - Job
+    pappl_pr_options_t *options,		// I - Options
+    pappl_device_t   *device)		// I - Device
 {
-  pcl_t	       *pcl = (pcl_t *)papplJobGetData(job);
-				  // Job data
+  pcl_t	*pcl = (pcl_t *)papplJobGetData(job);
+					// Job data
 
 
   (void)options;
@@ -546,38 +549,36 @@ pcl_rendjob(
 // 'pcl_rendpage()' - End a page.
 //
 
-static bool                     // O - `true` on success, `false` on failure
+static bool				// O - `true` on success, `false` on failure
 pcl_rendpage(
-    pappl_job_t      *job,      // I - Job
-    pappl_joptions_t *options,  // I - Job options
-    pappl_device_t   *device,   // I - Device
-    unsigned         page)      // I - Page number
+    pappl_job_t      *job,		// I - Job
+    pappl_pr_options_t *options,		// I - Job options
+    pappl_device_t   *device,		// I - Device
+    unsigned         page)		// I - Page number
 {
-  pcl_t        *pcl = (pcl_t *)papplJobGetData(job);
-                                // Job data
+  pcl_t	*pcl = (pcl_t *)papplJobGetData(job);
+					// Job data
 
 
   // Eject the current page...
-
   if (pcl->num_planes > 1)
   {
     papplDevicePuts(device, "\033*rC"); // End color GFX
 
-    if (!((&(options->header))->Duplex && (page & 1)))
+    if (!(options->header.Duplex && (page & 1)))
       papplDevicePuts(device, "\033&l0H");  // Eject current page
   }
   else
   {
     papplDevicePuts(device, "\033*r0B");  // End GFX
 
-    if (!((&(options->header))->Duplex && (page & 1)))
+    if (!(options->header.Duplex && (page & 1)))
       papplDevicePuts(device, "\014");  // Eject current page
   }
 
   papplDeviceFlush(device);
 
   // Free memory...
-
   free(pcl->planes[0]);
 
   if (pcl->comp_buffer)
@@ -591,14 +592,14 @@ pcl_rendpage(
 // 'pcl_rstartjob()' - Start a job.
 //
 
-static bool                     // O - `true` on success, `false` on failure
+static bool				// O - `true` on success, `false` on failure
 pcl_rstartjob(
-    pappl_job_t      *job,      // I - Job
-    pappl_joptions_t *options,  // I - Job options
-    pappl_device_t   *device)   // I - Device
+    pappl_job_t      *job,		// I - Job
+    pappl_pr_options_t *options,		// I - Job options
+    pappl_device_t   *device)		// I - Device
 {
-  pcl_t        *pcl = (pcl_t *)calloc(1, sizeof(pcl_t));
-				  // Job data
+  pcl_t	*pcl = (pcl_t *)calloc(1, sizeof(pcl_t));
+					// Job data
 
 
   (void)options;
@@ -615,19 +616,19 @@ pcl_rstartjob(
 // 'pcl_rstartpage()' - Start a page.
 //
 
-static bool                      // O - `true` on success, `false` on failure
+static bool				// O - `true` on success, `false` on failure
 pcl_rstartpage(
-    pappl_job_t       *job,       // I - Job
-    pappl_joptions_t  *options,   // I - Job options
-    pappl_device_t    *device,    // I - Device
-    unsigned          page)       // I - Page number
+    pappl_job_t      *job,		// I - Job
+    pappl_pr_options_t *options,		// I - Job options
+    pappl_device_t   *device,		// I - Device
+    unsigned         page)		// I - Page number
 {
-  unsigned            plane,    // Looping var
-                      length;   // Bytes to write
+  unsigned	plane,			// Looping var
+		length;			// Bytes to write
   cups_page_header2_t *header = &(options->header);
-                                // Page header
-  pcl_t               *pcl = (pcl_t *)papplJobGetData(job);
-                                // Job data
+					// Page header
+  pcl_t		*pcl = (pcl_t *)papplJobGetData(job);
+					// Job data
 
 
   //
@@ -771,7 +772,7 @@ pcl_rstartpage(
 static bool				// O - `true` on success, `false` on failure
 pcl_rwriteline(
     pappl_job_t         *job,		// I - Job
-    pappl_joptions_t    *options,	// I - Job options
+    pappl_pr_options_t    *options,	// I - Job options
     pappl_device_t      *device,	// I - Device
     unsigned            y,		// I - Line number
     const unsigned char *pixels)	// I - Line
@@ -903,9 +904,9 @@ pcl_rwriteline(
 // 'pcl_status()' - Get printer status.
 //
 
-static bool                   // O - `true` on success, `false` on failure
+static bool				// O - `true` on success, `false` on failure
 pcl_status(
-    pappl_printer_t *printer) // I - Printer
+    pappl_printer_t *printer)		// I - Printer
 {
   if (!strcmp(papplPrinterGetDriverName(printer), "hp_deskjet"))
   {
