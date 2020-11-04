@@ -143,7 +143,7 @@ pcl_autoadd(const char *device_info,	// I - Device name
 
 
   // Parse the IEEE-1284 device ID to see if this is a printer we support...
-  num_did = papplDeviceParse1284ID(device_id, &did);
+  num_did = papplDeviceParseID(device_id, &did);
 
   // Look at the COMMAND SET (CMD) key for the list of printer languages,,,
   if ((cmd = cupsGetOption("COMMAND SET", num_did, did)) == NULL)
