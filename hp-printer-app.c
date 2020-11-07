@@ -195,23 +195,32 @@ pcl_callback(
   (void)device_uri;
   (void)driver_attrs;
 
-  driver_data->printfile_cb    = pcl_print;
-  driver_data->rendjob_cb      = pcl_rendjob;
-  driver_data->rendpage_cb     = pcl_rendpage;
-  driver_data->rstartjob_cb    = pcl_rstartjob;
-  driver_data->rstartpage_cb   = pcl_rstartpage;
-  driver_data->rwriteline_cb   = pcl_rwriteline;
-  driver_data->status_cb       = pcl_status;
-  driver_data->format          = "application/vnd.hp-pcl";
+  /* Set callbacks */
+  driver_data->printfile_cb  = pcl_print;
+  driver_data->rendjob_cb    = pcl_rendjob;
+  driver_data->rendpage_cb   = pcl_rendpage;
+  driver_data->rstartjob_cb  = pcl_rstartjob;
+  driver_data->rstartpage_cb = pcl_rstartpage;
+  driver_data->rwriteline_cb = pcl_rwriteline;
+  driver_data->status_cb     = pcl_status;
+
+  /* Native format */
+  driver_data->format = "application/vnd.hp-pcl";
+
+  /* Default orientation and quality */
   driver_data->orient_default  = IPP_ORIENT_NONE;
   driver_data->quality_default = IPP_QUALITY_NORMAL;
 
   if (!strcmp(driver_name, "hp_deskjet"))
   {
+    /* Make and model name */
     strncpy(driver_data->make_and_model, "HP DeskJet", sizeof(driver_data->make_and_model) - 1);
+
+    /* Pages-per-minute for monochrome and color */
     driver_data->ppm       = 8;
     driver_data->ppm_color = 2;
 
+    /* Three resolutions - 150dpi, 300dpi (default), and 600dpi */
     driver_data->num_resolution  = 3;
     driver_data->x_resolution[0] = 150;
     driver_data->y_resolution[0] = 150;
@@ -221,39 +230,37 @@ pcl_callback(
     driver_data->y_resolution[2] = 600;
     driver_data->x_default = driver_data->y_default = 300;
 
+    /* Four color spaces - black (1-bit and 8-bit), grayscale, and sRGB */
     driver_data->raster_types = PAPPL_PWG_RASTER_TYPE_BLACK_1 | PAPPL_PWG_RASTER_TYPE_BLACK_8 | PAPPL_PWG_RASTER_TYPE_SGRAY_8 | PAPPL_PWG_RASTER_TYPE_SRGB_8;
 
+    /* Color modes: auto (default), monochrome, and color */
     driver_data->color_supported = PAPPL_COLOR_MODE_AUTO | PAPPL_COLOR_MODE_AUTO_MONOCHROME | PAPPL_COLOR_MODE_COLOR | PAPPL_COLOR_MODE_MONOCHROME;
     driver_data->color_default   = PAPPL_COLOR_MODE_AUTO;
 
+    /* Media sizes with 1/4" left/right and 1/2" top/bottom margins*/
     driver_data->num_media = (int)(sizeof(pcl_hp_deskjet_media) / sizeof(pcl_hp_deskjet_media[0]));
     memcpy(driver_data->media, pcl_hp_deskjet_media, sizeof(pcl_hp_deskjet_media));
 
+    driver_data->left_right = 635;	 // 1/4" left and right
+    driver_data->bottom_top = 1270;	 // 1/2" top and bottom
+
+    /* 1-sided printing only */
     driver_data->sides_supported = PAPPL_SIDES_ONE_SIDED;
     driver_data->sides_default   = PAPPL_SIDES_ONE_SIDED;
 
+    /* Three paper trays (MSN names) */
     driver_data->num_source = 3;
     driver_data->source[0]  = "tray-1";
     driver_data->source[1]  = "manual";
     driver_data->source[2]  = "envelope";
 
+    /* Five media types (MSN names) */
     driver_data->num_type = 5;
     driver_data->type[0] = "stationery";
     driver_data->type[1] = "bond";
     driver_data->type[2] = "special";
     driver_data->type[3] = "transparency";
     driver_data->type[4] = "photographic-glossy";
-
-    driver_data->left_right = 635;	 // 1/4" left and right
-    driver_data->bottom_top = 1270;	 // 1/2" top and bottom
-
-    for (i = 0; i < driver_data->num_source; i ++)
-    {
-      if (strcmp(driver_data->source[i], "envelope"))
-        snprintf(driver_data->media_ready[i].size_name, sizeof(driver_data->media_ready[i].size_name), "na_letter_8.5x11in");
-      else
-        snprintf(driver_data->media_ready[i].size_name, sizeof(driver_data->media_ready[i].size_name), "env_10_4.125x9.5in");
-    }
   }
   else if (!strcmp(driver_name, "hp_generic"))
   {
@@ -354,9 +361,16 @@ pcl_callback(
   // Fill out ready and default media (default == ready media from the first source)
   for (i = 0; i < driver_data->num_source; i ++)
   {
-    pwg_media_t *pwg = pwgMediaForPWG(driver_data->media_ready[i].size_name);
+    pwg_media_t *pwg;			/* Media size information */
 
-    if (pwg)
+    /* Use US Letter for regular trays, #10 envelope for the envelope tray */
+    if (!strcmp(driver_data->source[i], "envelope"))
+      strncpy(driver_data->media_ready[i].size_name, "na_number-10_4.125x9.5in", sizeof(driver_data->media_ready[i].size_name) - 1);
+    else
+      strncpy(driver_data->media_ready[i].size_name, "na_letter_8.5x11in", sizeof(driver_data->media_ready[i].size_name) - 1);
+
+    /* Set margin and size information */
+    if ((pwg = pwgMediaForPWG(driver_data->media_ready[i].size_name)) != NULL)
     {
       driver_data->media_ready[i].bottom_margin = driver_data->bottom_top;
       driver_data->media_ready[i].left_margin   = driver_data->left_right;
@@ -364,8 +378,8 @@ pcl_callback(
       driver_data->media_ready[i].size_width    = pwg->width;
       driver_data->media_ready[i].size_length   = pwg->length;
       driver_data->media_ready[i].top_margin    = driver_data->bottom_top;
-      snprintf(driver_data->media_ready[i].source, sizeof(driver_data->media_ready[i].source), "%s", driver_data->source[i]);
-      snprintf(driver_data->media_ready[i].type, sizeof(driver_data->media_ready[i].type), "%s", driver_data->type[0]);
+      strncpy(driver_data->media_ready[i].source, driver_data->source[i], sizeof(driver_data->media_ready[i].source) - 1);
+      strncpy(driver_data->media_ready[i].type, driver_data->type[0],  sizeof(driver_data->media_ready[i].type) - 1);
     }
   }
 
