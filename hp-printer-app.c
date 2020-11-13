@@ -93,7 +93,7 @@ static const char * const pcl_hp_laserjet_media[] =
 //
 
 static const char *pcl_autoadd(const char *device_info, const char *device_uri, const char *device_id, void *data);
-static bool   pcl_callback(pappl_system_t *system, const char *driver_name, const char *device_uri, pappl_pr_driver_data_t *driver_data, ipp_t **driver_attrs, void *data);
+static bool   pcl_callback(pappl_system_t *system, const char *driver_name, const char *device_uri, const char *device_id, pappl_pr_driver_data_t *driver_data, ipp_t **driver_attrs, void *data);
 static void   pcl_compress_data(pappl_job_t *job, pappl_device_t *device, unsigned char *line, unsigned length, unsigned plane, unsigned type);
 static bool   pcl_print(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
 static bool   pcl_rendjob(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
@@ -182,6 +182,7 @@ pcl_callback(
     const char             *driver_name,
 					// I - Driver name
     const char             *device_uri,// I - Device URI (not used)
+    const char             *device_id,	// I - IEEE-1284 device ID (not used)
     pappl_pr_driver_data_t *driver_data,
 					// O - Driver data
     ipp_t                  **driver_attrs,
@@ -193,6 +194,7 @@ pcl_callback(
 
   (void)data;
   (void)device_uri;
+  (void)device_id;
   (void)driver_attrs;
 
   /* Set callbacks */
