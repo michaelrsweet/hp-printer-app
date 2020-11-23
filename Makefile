@@ -18,7 +18,7 @@ unitdir 	:=	`pkg-config --variable=systemdsystemunitdir systemd`
 
 
 # Compiler/linker options...
-OPTIM		=	-Os -g
+OPTIM		=	-g
 CFLAGS		+=	`pkg-config --cflags pappl` $(OPTIM)
 LDFLAGS		+=	$(OPTIM)
 LIBS		+=	`pkg-config --libs pappl`

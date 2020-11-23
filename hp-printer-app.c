@@ -297,6 +297,14 @@ pcl_callback(
     driver_data->source[5]  = "manual";
     driver_data->source[6]  = "envelope";
 
+    /* Five media types (MSN names) */
+    driver_data->num_type = 5;
+    driver_data->type[0] = "stationery";
+    driver_data->type[1] = "stationery-letterhead";
+    driver_data->type[2] = "bond";
+    driver_data->type[3] = "special";
+    driver_data->type[4] = "transparency";
+
     driver_data->left_right = 635;	// 1/4" left and right
     driver_data->bottom_top = 423;	// 1/6" top and bottom
 
@@ -342,6 +350,14 @@ pcl_callback(
     driver_data->source[4]  = "tray-4";
     driver_data->source[5]  = "manual";
     driver_data->source[6]  = "envelope";
+
+    /* Five media types (MSN names) */
+    driver_data->num_type = 5;
+    driver_data->type[0] = "stationery";
+    driver_data->type[1] = "stationery-letterhead";
+    driver_data->type[2] = "bond";
+    driver_data->type[3] = "special";
+    driver_data->type[4] = "transparency";
 
     driver_data->left_right = 635;	 // 1/4" left and right
     driver_data->bottom_top = 1270;	 // 1/2" top and bottom
