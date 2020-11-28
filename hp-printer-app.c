@@ -117,7 +117,7 @@ main(int  argc,				// I - Number of command-line arguments
                         /*version*/"1.0",
                         /*footer_html*/NULL,
                         (int)(sizeof(pcl_drivers) / sizeof(pcl_drivers[0])),
-                        pcl_drivers, pcl_callback, pcl_autoadd,
+                        pcl_drivers, pcl_autoadd, pcl_callback,
                         /*subcmd_name*/NULL, /*subcmd_cb*/NULL,
                         /*system_cb*/NULL,
                         /*usage_cb*/NULL,
