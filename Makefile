@@ -19,9 +19,9 @@ unitdir 	:=	`pkg-config --variable=systemdsystemunitdir systemd`
 
 # Compiler/linker options...
 OPTIM		=	-g
-CFLAGS		+=	`pkg-config --cflags pappl` $(OPTIM)
-LDFLAGS		+=	$(OPTIM)
-LIBS		+=	`pkg-config --libs pappl`
+CFLAGS		+=	`cups-config --cflags` `pkg-config --cflags pappl` $(OPTIM)
+LDFLAGS		+=	$(OPTIM) `cups-config --ldflags`
+LIBS		+=	`pkg-config --libs pappl` `cups-config --image --libs`
 
 
 # Targets...
