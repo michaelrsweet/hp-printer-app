@@ -13,7 +13,7 @@ confinement: strict
 
 apps:
   hp-printer-app:
-    command: bin/hp-printer-app
+    command: usr/local/bin/hp-printer-app
     plugs: [avahi-control, home, network, network-bind, network-manager, raw-usb]
 
 parts:
