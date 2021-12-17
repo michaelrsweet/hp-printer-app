@@ -1,6 +1,6 @@
 name: hp-printer-app
-base: core18
-version: '1.0'
+base: core20
+version: '1.1'
 summary: HP Printer Application
 description: |
   HP Printer Application is sample printer application for Hewlett Packard PCL
@@ -20,9 +20,7 @@ parts:
   pappl:
     plugin: autotools
     configflags: [--enable-libjpeg,--enable-libpng,--enable-libusb,--with-dnssd=avahi]
-    source: https://github.com/michaelrsweet/pappl
-    source-branch: v1.0.x
-    source-type: git
+    source: https://github.com/michaelrsweet/pappl/releases/download/v1.1.0/pappl-1.1.0.tar.gz
     build-packages: [libavahi-client-dev, libcups2-dev, libcupsimage2-dev, libgnutls28-dev, libjpeg8-dev, libpam-dev, libpng-dev, libusb-1.0-0-dev, zlib1g-dev]
     stage-packages: [libavahi-client3, libcups2, libcupsimage2, libjpeg8, libpng16-16, libusb-1.0-0]
 
