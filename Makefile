@@ -80,7 +80,7 @@ macos:
 	make OPTIM="-g -Os -mmacosx-version-min=10.14 -arch x86_64 -arch arm64" all
 	echo "Creating macOS app bundle..."
 	rm -rf /private/tmp/hp-printer-app-$(VERSION)
-	make BUILDROOT="/private/tmp/hp-printer-app-$(VERSION)" install
+	make DESTDIR="/private/tmp/hp-printer-app-$(VERSION)" install
 	mkdir -p "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app/Contents/MacOS"
 	mv "/private/tmp/hp-printer-app-$(VERSION)/usr/local/bin/hp-printer-app" "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app/Contents/MacOS"
 	mkdir -p "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app/Contents/Resources"
