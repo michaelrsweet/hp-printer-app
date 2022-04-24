@@ -1,6 +1,6 @@
 name: hp-printer-app
 base: core20
-version: '1.1'
+version: '1.2'
 summary: HP Printer Application
 description: |
   HP Printer Application is sample printer application for Hewlett Packard PCL
@@ -10,21 +10,27 @@ description: |
 
 grade: stable
 confinement: strict
+icon: hp-printer-app.png
 
 apps:
-  hp-printer-app:
-    command: usr/local/bin/hp-printer-app
-    plugs: [avahi-control, home, network, network-bind, network-manager, raw-usb]
+    hp-printer-app:
+        command: usr/local/bin/hp-printer-app
+        plugs: [avahi-control, home, network, network-bind, network-manager, raw-usb]
+
+    hp-printer-app-server:
+        command: usr/local/bin/hp-printer-app server -o log-file=syslog
+        daemon: simple
+        plugs: [avahi-control, home, network, network-bind, network-manager, raw-usb]
 
 parts:
-  pappl:
-    plugin: autotools
-    autotools-configure-parameters: [--disable-shared,--enable-libjpeg,--enable-libpng,--enable-libusb,--with-dnssd=avahi]
-    source: https://github.com/michaelrsweet/pappl/releases/download/v1.1.0/pappl-1.1.0.tar.gz
-    build-packages: [libavahi-client-dev, libcups2-dev, libcupsimage2-dev, libgnutls28-dev, libjpeg8-dev, libpam-dev, libpng-dev, libusb-1.0-0-dev, zlib1g-dev]
-    stage-packages: [libavahi-client3, libcups2, libcupsimage2, libjpeg8, libpng16-16, libusb-1.0-0]
+    pappl:
+        plugin: autotools
+        autotools-configure-parameters: [--disable-shared,--enable-libjpeg,--enable-libpng,--enable-libusb,--with-dnssd=avahi]
+        source: https://github.com/michaelrsweet/pappl/releases/download/v1.2b1/pappl-1.2b1.tar.gz
+        build-packages: [libavahi-client-dev, libcups2-dev, libcupsimage2-dev, libgnutls28-dev, libjpeg8-dev, libpam-dev, libpng-dev, libusb-1.0-0-dev, zlib1g-dev]
+        stage-packages: [libavahi-client3, libcups2, libcupsimage2, libjpeg8, libpng16-16, libusb-1.0-0]
 
-  hp-printer-app:
-    plugin: make
-    source: .
-    after: [pappl]
+    hp-printer-app:
+        plugin: make
+        source: .
+        after: [pappl]

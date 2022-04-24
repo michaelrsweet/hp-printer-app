@@ -1,12 +1,12 @@
 .\"
 .\" HP Printer Application man page
 .\"
-.\" Copyright © 2020 by Michael R Sweet
+.\" Copyright © 2020-2022 by Michael R Sweet
 .\"
 .\" Licensed under Apache License v2.0.  See the file "LICENSE" for more
 .\" information.
 .\"
-.TH hp-printer-app 1 "hp-printer-app" "2020-07-10" "Michael R Sweet"
+.TH hp-printer-app 1 "hp-printer-app" "2022-04-24" "Michael R Sweet"
 .SH NAME
 hp-printer-app \- hp printer application
 .SH SYNOPSIS
@@ -24,81 +24,218 @@ If no sub-command is specified, "submit" is assumed.
 The following sub-commands are recognized by
 .B hp-printer-app:
 .TP 5
-add
+.B add
 Add a printer queue.
 .TP 5
-cancel
+.B cancel
 Cancel one or more print jobs.
 .TP 5
-default
+.B default
 Get/Set the default printer queue.
 .TP 5
-delete
+.B delete
 Delete a printer queue.
 .TP 5
-devices
+.B devices
 List connected printers.
 .TP 5
-drivers
+.B drivers
 List the supported drivers.
 .TP 5
-jobs
+.B jobs
 List pending print jobs.
 .TP 5
-modify
+.B modify
 Modify a printer queue.
 .TP 5
-options
+.B options
 List supported options.
 .TP 5
-printers
+.B printers
 List the printer queues.
 .TP 5
-server
+.B server
 Start a server.
 .TP 5
-shutdown
+.B shutdown
 Shutdown a running server.
 .TP 5
-status
+.B status
 Show the status of a printer or all printers.
 .TP 5
-submit
+.B submit
 Submit a file for printing.
 .SH OPTIONS
 The following options are recognized by
 .B hp-printer-app:
 .TP 5
--a
-Cancel all jobs.
+.B \-a
+Cancels all jobs ("cancel" sub-command).
 .TP 5
--d PRINTER
-Specify printer.
+\fB\-d \fIPRINTER\fR
+Specifies the printer.
 .TP 5
--h HOST
-Specify hostname.
+\fB\-h \fIHOST\fR
+Specifies the server hostname.
 .TP 5
--j JOB-ID
-Specify job ID.
+\fB\-j \fIJOB-ID\fR
+Specifies the job ID ("cancel" sub-command).
 .TP 5
--m DRIVER-NAME
-Specify driver.
+\fB\-m \fIDRIVER-NAME\fR
+Specifies the driver name ("add" sub-command).
+.B hp-printer-app
+supports the "pcl_deskjet" (HP DeskJet and Photosmart printers), "pcl_laserjet" (HP LaserJet printers), and "pcl_generic" (PCL-compatible laser printers from other vendors) driver names.
 .TP 5
--n COPIES
-Specify number of copies.
+\fB\-n \fICOPIES\fR
+Specifies the number of copies.
 .TP 5
--o NAME=VALUE
-Specify option.
+\fB\-o media=\fISIZE-NAME\fR
+Specifies the paper size.
+.B hp-printer-app
+supports custom PWG "self-describing" media size names of the form "custom_name_WIDTHxLENGTHin" (size in inches) and "custom_name_WIDTHxLENGTHmm" (size in millimeters) as well as the following standard sizes: "na_ledger_11x17in", "na_legal_8.5x14in", "na_letter_8.5x11in", "na_executive_7x10in", "iso_a3_297x420mm" "iso_a4_210x297mm", "iso_a5_148x210mm", "jis_b5_182x257mm", "iso_b5_176x250mm", "na_number-10_4.125x9.5in", "iso_c5_162x229mm", "iso_dl_110x220mm", "na_monarch_3.875x7.5in".
 .TP 5
--t TITLE
-Specify job title.
+\fB\-o media-source=\fITRAY-NAME\fR
+Specifies the paper tray.
+.B hp-printer-app
+supports the following trays: "default" (default/auto tray), "manual" (manual feed), "envelope", "tray-1", "tray-2", "tray-3", or "tray-4", depending on the printer.
 .TP 5
--u URI
-Specify ipp: or ipps: printer/server.
+\fB\-o media-type=\fITYPE-NAME\fR
+Specifies the paper type.
+.B hp-printer-app
+supports the following types: "stationery" (plain paper), "stationery-inkjet" (inkjet paper), "stationery-letterhead" (letterhead paper), "envelope", "transparency", and "photographic" (photo paper of different kinds), depending on the printer.
 .TP 5
--v DEVICE-URI
-Specify socket: or usb: device.
+.B \-o orientation-requested=portrait
+Print images in portrait orientation.
+.TP 5
+.B \-o orientation-requested=landscape
+Print images in landscape (90 degrees counter-clockwise) orientation.
+.TP 5
+.B \-o orientation-requested=reverse-portrait
+Print images in reverse-portrait (upside down) orientation.
+.TP 5
+.B \-o orientation-requested=reverse-landscape
+Print images in reverse-landscape (90 degrees clockwise) orientation.
+.TP 5
+.B \-o orientation-requested=none
+Print images in automatic (portrait or landscape) orientation.
+.TP 5
+.B \-o print-color-mode=auto
+Print in color or grayscale as needed.
+.TP 5
+.B \-o print-color-mode=monochrome
+Print in grayscale.
+.TP 5
+.B \-o print-color-mode=color
+Print in color (HP DeskJet/Photosmart printers only).
+.TP 5
+.B \-o print-content-optimize=auto
+Optimize printing automatically based on the type and content of the file.
+.TP 5
+.B \-o print-content-optimize=graphic
+Optimize printing for graphics only.
+.TP 5
+.B \-o print-content-optimize=photo
+Optimize printing for photos.
+.TP 5
+.B \-o print-content-optimize=text
+Optimize printing for text only.
+.TP 5
+.B \-o print-content-optimize=text-and-graphic
+Optimize printing for text and graphics.
+.TP 5
+\fB\-o print-quality=draft\fR
+Print using draft quality.
+.TP 5
+\fB\-o print-quality=normal\fR
+Print using normal quality.
+.TP 5
+\fB\-o print-quality=high\fR
+Print using high/best quality.
+.TP 5
+\fB\-o printer-geo-location=geo:\fI=LATLON\fR
+Specifies the geographic location of the printer as a "geo:" URI ("add" and "modify" sub-commands).
+.TP 5
+\fB\-o printer-location\fI=LOCATION\fR
+Specifies the human-readable location, for example "Rack 42" ("add" and "modify" sub-commands).
+.TP 5
+\fB\-o printer-organization\fI=ORGANIZATION\fR
+Specifies the organization name, for example "Acme, Inc." ("add" and "modify" sub-commands).
+.TP 5
+\fB\-o printer-organizational-unit\fI=UNIT\fR
+Specifies the organizational unit, for example "Accounting Department" ("add" and "modify" sub-commands).
+.TP 5
+\fB\-o printer-resolution=300dpi\fR
+.TP 5
+\fB\-o printer-resolution=600dpi\fR
+Specifies the print resolution in dots per inch.
+.TP 5
+\fB\-o sides=one-sided\fR
+Print on one side only.
+.TP 5
+\fB\-o sides=two-sided-long-edge\fR
+Print on both sides for portrait output.
+.TP 5
+\fB\-o sides=two-sided-short-edge\fR
+Print on both sides for landscape output.
+.TP 5
+\fB\-t \fITITLE\fR
+Specifies the job title ("submit" sub-command).
+.TP 5
+\fB\-u \fIURI\fR
+Specifies an "ipp:" or "ipps:" printer/server.
+.TP 5
+\fB\-v \fIDEVICE-URI\fR
+Specifies a "socket:" or "usb:" device ("add" sub-command).
+.SH EXAMPLES
+Add a PCL laser printer "laser" at IP address 11.22.33.44:
+
+.nf
+hp-printer-app add -v socket://11.22.33.44 -m pcl_laserjet -d laser
+.fi
+
+Print a PCL file to the printer:
+
+.nf
+hp-printer-app -d laser filename.pcl
+.fi
+
+Print a photo to US Letter media:
+
+.nf
+hp-printer-app -d laser -o media=na_letter_8.5x11in -o print-quality=high photo.jpg
+.fi
+
+List supported options:
+
+.nf
+hp-printer-app options
+.fi
+
+List queued jobs:
+
+.nf
+hp-printer-app jobs
+.fi
+
+List configured printers:
+
+.nf
+hp-printer-app printers
+.fi
+
+Show status of server:
+
+.nf
+hp-printer-app status
+.fi
+
+List network and USB printers that can be added:
+
+.nf
+hp-printer-app devices
+.fi
+
 .SH SEE ALSO
 https://www.msweet.org/hp-printer-app
 .SH COPYRIGHT
-Copyright \[co] 2020 by Michael R Sweet.
+Copyright \[co] 2019-2022 by Michael R Sweet.

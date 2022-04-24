@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="0.9">
+    <dict>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+
+	<key>CFBundleExecutable</key>
+	<string>hp-printer-app</string>
+
+	<key>CFBundleIdentifier</key>
+	<string>org.msweet.hp-printer-app</string>
+
+	<key>CFBundleVersion</key>
+	<string>@VERSION@</string>
+
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2019-2022 by Michael R Sweet</string>
+
+	<key>CFAppleHelpAnchor</key>
+	<string>help</string>
+
+	<key>CFBundleName</key>
+	<string>HP Printer Application</string>
+
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+
+	<key>CFBundleSignature</key>
+	<string>HPPA</string>
+
+	<key>CFBundleIconFile</key>
+	<string>hp-printer-app.icns</string>
+
+	<key>CFBundleShortVersionString</key>
+	<string>@VERSION@</string>
+
+	<key>CFBundleGetInfoString</key>
+	<string>@VERSION@, Copyright © Michael R Sweet 2019-2022</string>
+    </dict>
+</plist>
