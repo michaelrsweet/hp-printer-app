@@ -28,6 +28,16 @@ CSFLAGS		=	-s "$${CODESIGN_IDENTITY:=-}" --timestamp -o runtime
 OPTIM		=	-g
 CFLAGS		=	$(CPPFLAGS) $(OPTIM)
 CPPFLAGS	=	'-DVERSION="$(VERSION)"' `cups-config --cflags` `pkg-config --cflags pappl`
+ICONS		=	\
+			icons/hp-deskjet-lg.png \
+			icons/hp-deskjet-md.png \
+			icons/hp-deskjet-sm.png \
+			icons/hp-generic-lg.png \
+			icons/hp-generic-md.png \
+			icons/hp-generic-sm.png \
+			icons/hp-laserjet-lg.png \
+			icons/hp-laserjet-md.png \
+			icons/hp-laserjet-sm.png
 LDFLAGS		=	$(OPTIM) `cups-config --ldflags`
 LIBS		=	`pkg-config --libs pappl` `cups-config --image --libs`
 
@@ -68,7 +78,11 @@ hp-printer-app:	$(OBJS)
 	echo "Linking $@..."
 	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
-$(OBJS):	Makefile
+$(OBJS):	icons.h Makefile
+
+icons.h:	$(ICONS)
+	echo "Generating $@..."
+	pappl-makeresheader $(ICONS) >icons.h
 
 
 # Bundle and notarize the hp-printer-app executable and make the macOS package...
