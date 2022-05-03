@@ -343,7 +343,6 @@ pcl_callback(
     driver_data->x_default = driver_data->y_default = 300;
 
     driver_data->raster_types = PAPPL_PWG_RASTER_TYPE_BLACK_1 | PAPPL_PWG_RASTER_TYPE_BLACK_8 | PAPPL_PWG_RASTER_TYPE_SGRAY_8;
-    driver_data->force_raster_type = PAPPL_PWG_RASTER_TYPE_BLACK_1;
 
     driver_data->color_supported = PAPPL_COLOR_MODE_MONOCHROME;
     driver_data->color_default   = PAPPL_COLOR_MODE_MONOCHROME;
@@ -410,7 +409,6 @@ pcl_callback(
     driver_data->x_default = driver_data->y_default = 300;
 
     driver_data->raster_types = PAPPL_PWG_RASTER_TYPE_BLACK_1 | PAPPL_PWG_RASTER_TYPE_BLACK_8 | PAPPL_PWG_RASTER_TYPE_SGRAY_8;
-    driver_data->force_raster_type = PAPPL_PWG_RASTER_TYPE_BLACK_1;
 
     driver_data->color_supported = PAPPL_COLOR_MODE_MONOCHROME;
     driver_data->color_default   = PAPPL_COLOR_MODE_MONOCHROME;
@@ -991,7 +989,7 @@ pcl_rwriteline(
         // 8 bit black
         for (x = pcl->xstart, kptr = pcl->planes[0], pixptr = pixels + pcl->xstart, bit = 128, byte = 0; x < pcl->xend; x ++, pixptr ++)
         {
-          if (*pixptr > dither[x & 15])
+          if (*pixptr >= dither[x & 15])
             byte |= bit;
 
           if (bit == 1)
@@ -1028,6 +1026,11 @@ pcl_rwriteline(
         if (bit < 128)
           *kptr = byte;
       }
+    }
+    else
+    {
+      // 1-bit B&W
+      memcpy(pcl->planes[0], pixels + pcl->xstart / 8, pcl->linesize);
     }
 
     for (plane = 0; plane < pcl->num_planes; plane ++)
