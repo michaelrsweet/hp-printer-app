@@ -741,6 +741,14 @@ pcl_rstartpage(
 					// Page header
   pcl_t		*pcl = (pcl_t *)papplJobGetData(job);
 					// Job data
+  static const int media_positions[] =	// Media position values
+  {
+    1,					// main
+    4,					// alternate
+    5,					// large-capacity
+    2,					// manual
+    6					// envelope
+  };
 
 
   papplLogJob(job, PAPPL_LOGLEVEL_DEBUG, "Starting page %u...", page);
@@ -758,22 +766,26 @@ pcl_rstartpage(
   pcl->yend     = pcl->ystart + pcl->height;
 
   // Setup printer/job attributes...
-  if ((!header->Duplex || (page & 1)) && header->MediaPosition)
-    papplDevicePrintf(device, "\033&l%dH", header->MediaPosition);
+  if ((!header->Duplex || (page & 1)) && header->MediaPosition && header->MediaPosition <= (unsigned)(sizeof(media_positions) / sizeof(media_positions[0])))
+    papplDevicePrintf(device, "\033&l%dH", media_positions[header->MediaPosition - 1]);
 					// Set media position
 
   if (header->Duplex && pcl->is_deskjet)
   {
     // Handle duplexing on DeskJet printers...
-    papplDevicePuts(device, "\033&l-2H");	// Load media
+    papplDevicePuts(device, "\033&l-2H");
+					// Load media
 
     if (page & 1)
-      papplDevicePuts(device, "\033&l2S");	// Set duplex mode
+      papplDevicePuts(device, "\033&l2S");
+					// Set duplex mode
   }
 
   if (!header->Duplex || (page & 1))
   {
     // Set the media size...
+    int media_type = -1;		// Media type value
+
     papplDevicePuts(device, "\033&l6D\033&k12H");
 					// Set 6 LPI, 10 CPI
     papplDevicePuts(device, "\033&l0O");// Set portrait orientation
@@ -838,10 +850,18 @@ pcl_rstartpage(
     papplDevicePrintf(device, "\033&l%dX", header->NumCopies);
 					// Set number of copies
 
-    // TODO: Fix me
-    if (header->cupsMediaType)
-      papplDevicePrintf(device, "\033&l%dM", header->cupsMediaType);
-					// Set media type
+    if (!strcmp(header->MediaType, "stationery"))
+      media_type = 0;
+    else if (!strcmp(header->MediaType, "stationery-inkjet"))
+      media_type = 2;
+    else if (!strcmp(header->MediaType, "photographic"))
+      media_type = 3;
+    else if (!strcmp(header->MediaType, "transparency"))
+      media_type = 4;
+
+    if (media_type >= 0)
+      papplDevicePrintf(device, "\033&l%dM", media_type);
+					// Set PCL media type
 
     int mode = header->Duplex ? 1 + header->Tumble != 0 : 0;
 
@@ -851,6 +871,15 @@ pcl_rstartpage(
   }
   else
     papplDevicePuts(device, "\033&a2G");// Set back side
+
+  if (pcl->is_deskjet)
+  {
+    // Set print quality...
+    if (options->print_quality == IPP_QUALITY_HIGH || header->HWResolution[0] > 300)
+      papplDevicePuts(device, "\033*o2M");
+    else
+      papplDevicePuts(device, "\033*o0M");
+  }
 
   // Set graphics mode...
   papplDevicePrintf(device, "\033*t%uR", header->HWResolution[0]);
