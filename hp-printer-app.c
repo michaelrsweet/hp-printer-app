@@ -20,8 +20,18 @@
 // Types...
 //
 
+typedef enum hp_driver_e		// Drivers
+{
+  HP_DRIVER_DESKJET,			// PCL 3 Deskjet
+  HP_DRIVER_GENERIC,			// PCL 5 generic
+  HP_DRIVER_GENERIC6,			// PCL 6 generic B&W
+  HP_DRIVER_GENERIC6C,			// PCL 6 generic color
+  HP_DRIVER_LASERJET			// PCL 5 LaserJet
+} hp_driver_t;
+
 typedef struct pcl_s			// Job data
 {
+  hp_driver_t	driver;			// Driver to use
   size_t	linesize;		// Size of output line
   unsigned	width,			// Width
 		height,			// Height
@@ -34,8 +44,13 @@ typedef struct pcl_s			// Job data
   unsigned	num_planes,		// Number of color planes
 		feed;			// Number of lines to skip
   int		compression;		// Compression mode
-  bool		is_deskjet;		// DeskJet mode?
 } pcl_t;
+
+typedef struct pcl_map_s		// PCL name to code map
+{
+  const char	*keyword;		// Keyword string
+  int		value;			// Value
+} pcl_map_t;
 
 
 //
@@ -44,9 +59,11 @@ typedef struct pcl_s			// Job data
 
 static pappl_pr_driver_t pcl_drivers[] =   // Driver information
 {   /* name */          /* description */	/* device ID */	/* extension */
-  { "hp_deskjet",	"HP Deskjet",		NULL,		NULL },
-  { "hp_generic",	"Generic PCL",		"CMD:PCL;",	NULL },
-  { "hp_laserjet",	"HP LaserJet",		NULL,		NULL }
+  { "hp_deskjet",	"HP Deskjet series",	NULL,		NULL },
+  { "hp_generic",	"Generic PCL 5",	"CMD:PCL;",	NULL },
+  { "hp_generic6",	"Generic PCL 6/XL",	NULL,		NULL },
+  { "hp_generic6c",	"Generic Color PCL 6/XL", "CMD:PCLXL;",	NULL },
+  { "hp_laserjet",	"HP LaserJet series",	NULL,		NULL },
 };
 
 static const char * const pcl_hp_deskjet_media[] =
@@ -104,16 +121,17 @@ static const char * const pcl_hp_laserjet_media[] =
 //
 
 static const char *pcl_autoadd(const char *device_info, const char *device_uri, const char *device_id, void *data);
-static bool   pcl_callback(pappl_system_t *system, const char *driver_name, const char *device_uri, const char *device_id, pappl_pr_driver_data_t *driver_data, ipp_t **driver_attrs, void *data);
-static void   pcl_compress_data(pappl_job_t *job, pappl_device_t *device, unsigned char *line, unsigned length, unsigned plane, unsigned type);
-static bool   pcl_print(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
-static bool   pcl_rendjob(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
-static bool   pcl_rendpage(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device, unsigned page);
-static bool   pcl_rstartjob(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
-static bool   pcl_rstartpage(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device, unsigned page);
-static bool   pcl_rwriteline(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device, unsigned y, const unsigned char *pixels);
-static void   pcl_setup(pappl_system_t *system);
-static bool   pcl_status(pappl_printer_t *printer);
+static bool	pcl_callback(pappl_system_t *system, const char *driver_name, const char *device_uri, const char *device_id, pappl_pr_driver_data_t *driver_data, ipp_t **driver_attrs, void *data);
+static void	pcl_compress_data(pappl_job_t *job, pappl_device_t *device, unsigned char *line, unsigned length, unsigned plane);
+static bool	pcl_print(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
+static bool	pcl_rendjob(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
+static bool	pcl_rendpage(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device, unsigned page);
+static bool	pcl_rstartjob(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
+static bool	pcl_rstartpage(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device, unsigned page);
+static bool	pcl_rwriteline(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device, unsigned y, const unsigned char *pixels);
+static void	pcl_setup(pappl_system_t *system);
+static bool	pcl_status(pappl_printer_t *printer);
+static bool	pcl_update_status(pappl_printer_t *printer, pappl_device_t *device);
 
 
 //
@@ -257,7 +275,7 @@ pcl_callback(
   if (!strcmp(driver_name, "hp_deskjet"))
   {
     /* Make and model name */
-    papplCopyString(driver_data->make_and_model, "HP DeskJet", sizeof(driver_data->make_and_model));
+    papplCopyString(driver_data->make_and_model, "HP DeskJet series", sizeof(driver_data->make_and_model));
 
     /* Icons */
     driver_data->icons[0].data    = hp_deskjet_sm_png;
@@ -308,18 +326,20 @@ pcl_callback(
     driver_data->source[2]  = "envelope";
 
     /* Media types (MSN names) */
-    driver_data->num_type = 6;
-    driver_data->type[0] = "stationery";
-    driver_data->type[1] = "stationery-inkjet";
-    driver_data->type[2] = "stationery-letterhead";
-    driver_data->type[3] = "envelope";
-    driver_data->type[4] = "transparency";
-    driver_data->type[5] = "photographic";
+    driver_data->num_type = 8;
+    driver_data->type[0]  = "stationery";
+    driver_data->type[1]  = "stationery-inkjet";
+    driver_data->type[2]  = "stationery-letterhead";
+    driver_data->type[3]  = "cardstock";
+    driver_data->type[4]  = "labels";
+    driver_data->type[5]  = "envelope";
+    driver_data->type[6]  = "transparency";
+    driver_data->type[7]  = "photographic";
   }
   else if (!strcmp(driver_name, "hp_generic"))
   {
     /* Make and model name */
-    papplCopyString(driver_data->make_and_model, "Generic PCL Laser Printer", sizeof(driver_data->make_and_model));
+    papplCopyString(driver_data->make_and_model, "Generic PCL 5", sizeof(driver_data->make_and_model));
 
     /* Icons */
     driver_data->icons[0].data    = hp_generic_sm_png;
@@ -363,11 +383,84 @@ pcl_callback(
     driver_data->source[6]  = "envelope";
 
     /* Media types (MSN names) */
-    driver_data->num_type = 4;
-    driver_data->type[0] = "stationery";
-    driver_data->type[1] = "stationery-letterhead";
-    driver_data->type[2] = "envelope";
-    driver_data->type[3] = "transparency";
+    driver_data->num_type = 6;
+    driver_data->type[0]  = "stationery";
+    driver_data->type[1]  = "stationery-letterhead";
+    driver_data->type[2]  = "cardstock";
+    driver_data->type[3]  = "labels";
+    driver_data->type[4]  = "envelope";
+    driver_data->type[5]  = "transparency";
+
+    driver_data->left_right = 635;	// 1/4" left and right
+    driver_data->bottom_top = 423;	// 1/6" top and bottom
+
+    for (i = 0; i < driver_data->num_source; i ++)
+    {
+      if (strcmp(driver_data->source[i], "envelope"))
+        snprintf(driver_data->media_ready[i].size_name, sizeof(driver_data->media_ready[i].size_name), "na_letter_8.5x11in");
+      else
+        snprintf(driver_data->media_ready[i].size_name, sizeof(driver_data->media_ready[i].size_name), "env_10_4.125x9.5in");
+    }
+  }
+  else if (!strncmp(driver_name, "hp_generic6", 11))
+  {
+    /* Make and model name */
+    if (driver_name[11] == 'c')
+      papplCopyString(driver_data->make_and_model, "Generic PCL 6 Monochrome", sizeof(driver_data->make_and_model));
+    else
+      papplCopyString(driver_data->make_and_model, "Generic PCL 6 Color", sizeof(driver_data->make_and_model));
+
+    /* Icons */
+    driver_data->icons[0].data    = hp_generic_sm_png;
+    driver_data->icons[0].datalen = sizeof(hp_generic_sm_png);
+
+    driver_data->icons[1].data    = hp_generic_md_png;
+    driver_data->icons[1].datalen = sizeof(hp_generic_md_png);
+
+    driver_data->icons[2].data    = hp_generic_lg_png;
+    driver_data->icons[2].datalen = sizeof(hp_generic_lg_png);
+
+    /* Pages-per-minute for monochrome and color */
+    driver_data->ppm = 10;
+
+    /* Two resolutions - 300dpi (default) and 600dpi */
+    driver_data->num_resolution  = 2;
+    driver_data->x_resolution[0] = 300;
+    driver_data->y_resolution[0] = 300;
+    driver_data->x_resolution[1] = 600;
+    driver_data->y_resolution[1] = 600;
+    driver_data->x_default = driver_data->y_default = 300;
+
+    /* Four color spaces - black (1-bit and 8-bit), grayscale, and sRGB */
+    driver_data->raster_types = PAPPL_PWG_RASTER_TYPE_BLACK_1 | PAPPL_PWG_RASTER_TYPE_BLACK_8 | PAPPL_PWG_RASTER_TYPE_SGRAY_8 | PAPPL_PWG_RASTER_TYPE_SRGB_8;
+
+    /* Color modes: auto (default), monochrome, and color */
+    driver_data->color_supported = PAPPL_COLOR_MODE_AUTO | PAPPL_COLOR_MODE_AUTO_MONOCHROME | PAPPL_COLOR_MODE_COLOR | PAPPL_COLOR_MODE_MONOCHROME;
+    driver_data->color_default   = PAPPL_COLOR_MODE_AUTO;
+
+    driver_data->num_media = (int)(sizeof(pcl_generic_pcl_media) / sizeof(pcl_generic_pcl_media[0]));
+    memcpy(driver_data->media, pcl_generic_pcl_media, sizeof(pcl_generic_pcl_media));
+
+    driver_data->sides_supported = PAPPL_SIDES_ONE_SIDED | PAPPL_SIDES_TWO_SIDED_LONG_EDGE | PAPPL_SIDES_TWO_SIDED_SHORT_EDGE;
+    driver_data->sides_default   = PAPPL_SIDES_ONE_SIDED;
+
+    driver_data->num_source = 7;
+    driver_data->source[0]  = "default";
+    driver_data->source[1]  = "tray-1";
+    driver_data->source[2]  = "tray-2";
+    driver_data->source[3]  = "tray-3";
+    driver_data->source[4]  = "tray-4";
+    driver_data->source[5]  = "manual";
+    driver_data->source[6]  = "envelope";
+
+    /* Media types (MSN names) */
+    driver_data->num_type = 6;
+    driver_data->type[0]  = "stationery";
+    driver_data->type[1]  = "stationery-letterhead";
+    driver_data->type[2]  = "cardstock";
+    driver_data->type[3]  = "labels";
+    driver_data->type[4]  = "envelope";
+    driver_data->type[5]  = "transparency";
 
     driver_data->left_right = 635;	// 1/4" left and right
     driver_data->bottom_top = 423;	// 1/6" top and bottom
@@ -383,7 +476,7 @@ pcl_callback(
   else if (!strcmp(driver_name, "hp_laserjet"))
   {
     /* Make and model name */
-    papplCopyString(driver_data->make_and_model, "HP LaserJet", sizeof(driver_data->make_and_model));
+    papplCopyString(driver_data->make_and_model, "HP LaserJet series", sizeof(driver_data->make_and_model));
 
     /* Icons */
     driver_data->icons[0].data    = hp_laserjet_sm_png;
@@ -429,14 +522,16 @@ pcl_callback(
     driver_data->source[6]  = "envelope";
 
     /* Media types (MSN names) */
-    driver_data->num_type = 4;
-    driver_data->type[0] = "stationery";
-    driver_data->type[1] = "stationery-letterhead";
-    driver_data->type[2] = "envelope";
-    driver_data->type[3] = "transparency";
+    driver_data->num_type = 6;
+    driver_data->type[0]  = "stationery";
+    driver_data->type[1]  = "stationery-letterhead";
+    driver_data->type[2]  = "cardstock";
+    driver_data->type[3]  = "labels";
+    driver_data->type[4]  = "envelope";
+    driver_data->type[5]  = "transparency";
 
-    driver_data->left_right = 635;	 // 1/4" left and right
-    driver_data->bottom_top = 1270;	 // 1/2" top and bottom
+    driver_data->left_right = 423;	 // 1/6" left and right
+    driver_data->bottom_top = 423;	 // 1/6" top and bottom
 
     for (i = 0; i < driver_data->num_source; i ++)
     {
@@ -448,7 +543,7 @@ pcl_callback(
   }
   else
   {
-    papplLog(system, PAPPL_LOGLEVEL_ERROR, "No dimension information in driver name '%s'.", driver_name);
+    papplLog(system, PAPPL_LOGLEVEL_ERROR, "Driver name '%s' not supported.", driver_name);
     return (false);
   }
 
@@ -493,8 +588,7 @@ pcl_compress_data(
     pappl_device_t *device,		// I - Device
     unsigned char  *line,		// I - Data to compress
     unsigned       length,		// I - Number of bytes
-    unsigned       plane,		// I - Color plane
-    unsigned       type)		// I - Type of compression
+    unsigned       plane)		// I - Color plane
 {
   unsigned char	*line_ptr,		// Current byte pointer
 		*line_end,		// End-of-line byte pointer
@@ -503,86 +597,80 @@ pcl_compress_data(
   unsigned	count;			// Count of bytes for output
   pcl_t		*pcl = (pcl_t *)papplJobGetData(job);
 					// Job data
+  int		comp;			// Current compression type
 
 
-  switch (type)
+  // Try doing TIFF PackBits compression...
+  line_ptr = line;
+  line_end = line + length;
+  comp_ptr = pcl->comp_buffer;
+
+  while (line_ptr < line_end)
   {
-    default : // No compression...
-	line_ptr = line;
-	line_end = line + length;
-	break;
+    if ((line_ptr + 1) >= line_end)
+    {
+      // Single byte on the end...
+      *comp_ptr++ = 0x00;
+      *comp_ptr++ = *line_ptr++;
+    }
+    else if (line_ptr[0] == line_ptr[1])
+    {
+      // Repeated sequence...
+      line_ptr ++;
+      count = 2;
 
-    case 1 :  // Do run-length encoding...
-	line_end = line + length;
-	for (line_ptr = line, comp_ptr = pcl->comp_buffer; line_ptr < line_end; comp_ptr += 2, line_ptr += count)
-	{
-	  count = 1;
-	  while ((line_ptr + count) < line_end && line_ptr[0] == line_ptr[count] && count < 256)
-	    count ++;
+      while (line_ptr < (line_end - 1) && line_ptr[0] == line_ptr[1] && count < 127)
+      {
+	line_ptr ++;
+	count ++;
+      }
 
-	  comp_ptr[0] = (unsigned char)(count - 1);
-	  comp_ptr[1] = line_ptr[0];
-	}
+      *comp_ptr++ = (unsigned char)(257 - count);
+      *comp_ptr++ = *line_ptr++;
+    }
+    else
+    {
+      // Non-repeated sequence...
+      start    = line_ptr;
+      line_ptr ++;
+      count    = 1;
 
-	line_ptr = pcl->comp_buffer;
-	line_end = comp_ptr;
-	break;
+      while (line_ptr < (line_end - 1) && line_ptr[0] != line_ptr[1] && count < 127)
+      {
+	line_ptr ++;
+	count ++;
+      }
 
-    case 2 :  // Do TIFF pack-bits encoding...
-	line_ptr = line;
-	line_end = line + length;
-	comp_ptr = pcl->comp_buffer;
+      *comp_ptr++ = (unsigned char)(count - 1);
 
-	while (line_ptr < line_end)
-	{
-	  if ((line_ptr + 1) >= line_end)
-	  {
-	    // Single byte on the end...
-	    *comp_ptr++ = 0x00;
-	    *comp_ptr++ = *line_ptr++;
-	  }
-	  else if (line_ptr[0] == line_ptr[1])
-	  {
-	    // Repeated sequence...
-	    line_ptr ++;
-	    count = 2;
+      memcpy(comp_ptr, start, count);
+      comp_ptr += count;
+    }
+  }
 
-	    while (line_ptr < (line_end - 1) && line_ptr[0] == line_ptr[1] && count < 127)
-	    {
-	      line_ptr ++;
-	      count ++;
-	    }
+  if ((unsigned)(comp_ptr - pcl->comp_buffer) > length)
+  {
+    // Don't try compressing...
+    comp = 0;
+  }
+  else
+  {
+    // Use PackBits compression...
+    comp     = 2;
+    line_ptr = pcl->comp_buffer;
+    line_end = comp_ptr;
+  }
 
-	    *comp_ptr++ = (unsigned char)(257 - count);
-	    *comp_ptr++ = *line_ptr++;
-	  }
-	  else
-	  {
-	    // Non-repeated sequence...
-	    start    = line_ptr;
-	    line_ptr ++;
-	    count    = 1;
-
-	    while (line_ptr < (line_end - 1) && line_ptr[0] != line_ptr[1] && count < 127)
-	    {
-	      line_ptr ++;
-	      count ++;
-	    }
-
-	    *comp_ptr++ = (unsigned char)(count - 1);
-
-	    memcpy(comp_ptr, start, count);
-	    comp_ptr += count;
-	  }
-	}
-
-	line_ptr = pcl->comp_buffer;
-	line_end = comp_ptr;
-	break;
+  // Set compression mode as needed...
+  if (pcl->compression != comp)
+  {
+    // Set compression
+    pcl->compression = comp;
+    papplDevicePrintf(device, "\033*b%uM", pcl->compression);
   }
 
   // Set the length of the data and write a raster plane...
-  papplDevicePrintf(device, "\033*b%d%c", (int)(line_end - line_ptr), plane);
+  papplDevicePrintf(device, "\033*b%d%c", (int)(line_end - line_ptr), plane < (pcl->num_planes - 1) ? 'V' : 'W');
   papplDeviceWrite(device, line_ptr, (size_t)(line_end - line_ptr));
 }
 
@@ -647,6 +735,8 @@ pcl_rendjob(
   free(pcl);
   papplJobSetData(job, NULL);
 
+  pcl_update_status(papplJobGetPrinter(job), device);
+
   return (true);
 }
 
@@ -668,30 +758,39 @@ pcl_rendpage(
 
   papplLogJob(job, PAPPL_LOGLEVEL_DEBUG, "Ending page %u...", page);
 
-  // Eject the current page...
-  if (pcl->num_planes > 1)
+  switch (pcl->driver)
   {
-    papplDevicePuts(device, "\033*rC"); // End color GFX
+    case HP_DRIVER_DESKJET :
+    case HP_DRIVER_GENERIC :
+    case HP_DRIVER_LASERJET :
+	// Eject the current page...
+	if (pcl->num_planes > 1)
+	{
+	  papplDevicePuts(device, "\033*rC"); // End color GFX
 
-    if (!(options->header.Duplex && (page & 1)))
-      papplDevicePuts(device, "\033&l0H");
-					// Eject current page
-  }
-  else
-  {
-    papplDevicePuts(device, "\033*r0B");// End GFX
+	  if (!(options->header.Duplex && (page & 1)))
+	    papplDevicePuts(device, "\033&l0H");
+					      // Eject current page
+	}
+	else
+	{
+	  papplDevicePuts(device, "\033*r0B");// End GFX
 
-    if (!(options->header.Duplex && (page & 1)))
-      papplDevicePuts(device, "\014");  // Eject current page
+	  if (!(options->header.Duplex && (page & 1)))
+	    papplDevicePuts(device, "\014");  // Eject current page
+	}
+	break;
+
+    case HP_DRIVER_GENERIC6 :
+    case HP_DRIVER_GENERIC6C :
+	break;
   }
 
   papplDeviceFlush(device);
 
   // Free memory...
   free(pcl->planes[0]);
-
-  if (pcl->comp_buffer)
-    free(pcl->comp_buffer);
+  free(pcl->comp_buffer);
 
   return (true);
 }
@@ -707,18 +806,47 @@ pcl_rstartjob(
     pappl_pr_options_t *options,	// I - Job options
     pappl_device_t     *device)		// I - Device
 {
-  pcl_t	*pcl = (pcl_t *)calloc(1, sizeof(pcl_t));
+  int		i;			// Looping var
+  pcl_t		*pcl = (pcl_t *)calloc(1, sizeof(pcl_t));
 					// Job data
+  const char	*name = papplPrinterGetDriverName(papplJobGetPrinter(job));
+					// Driver name
+
 
   papplLogJob(job, PAPPL_LOGLEVEL_DEBUG, "Starting job...");
 
+  pcl_update_status(papplJobGetPrinter(job), device);
+
   (void)options;
 
-  pcl->is_deskjet = !strcmp(papplPrinterGetDriverName(papplJobGetPrinter(job)), "hp_deskjet");
+  // Save driver type...
+  pcl->driver = HP_DRIVER_GENERIC;
+
+  for (i = 0; i < (int)(sizeof(pcl_drivers) / sizeof(pcl_drivers[0])); i ++)
+  {
+    if (!strcmp(name, pcl_drivers[i].name))
+    {
+      pcl->driver = (hp_driver_t)i;
+      break;
+    }
+  }
 
   papplJobSetData(job, pcl);
 
-  papplDevicePuts(device, "\033E");	// PCL reset sequence
+  switch (pcl->driver)
+  {
+    case HP_DRIVER_DESKJET :
+    case HP_DRIVER_LASERJET :
+    case HP_DRIVER_GENERIC :
+	// Send a PCL reset sequence
+	papplDevicePuts(device, "\033E");
+	break;
+
+    case HP_DRIVER_GENERIC6 :
+    case HP_DRIVER_GENERIC6C :
+        // Send a PCL XL start sequence
+        break;
+  }
 
   return (true);
 }
@@ -735,198 +863,231 @@ pcl_rstartpage(
     pappl_device_t     *device,		// I - Device
     unsigned           page)		// I - Page number
 {
+  size_t	i;			// Looping var
   unsigned	plane,			// Looping var
 		length;			// Bytes to write
   cups_page_header2_t *header = &(options->header);
 					// Page header
   pcl_t		*pcl = (pcl_t *)papplJobGetData(job);
 					// Job data
-  static const int media_positions[] =	// Media position values
+  static const pcl_map_t pcl_sizes[] =	// PCL media size values
   {
-    1,					// main
-    4,					// alternate
-    5,					// large-capacity
-    2,					// manual
-    6					// envelope
+    { "iso_a3_297x420mm",		27 },
+    { "iso_a4_210x297mm",		26 },
+    { "iso_a5_148x210mm",		25 },
+    { "iso_b5_176x250mm",		100 },
+    { "iso_c5_162x229mm",		91 },
+    { "iso_dl_110x220mm",		90 },
+    { "jis_b5_182x257mm",		45 },
+    { "na_executive_7x10in",		1 },
+    { "na_ledger_11x17in",		6 },
+    { "na_legal_8.5x14in",		3 },
+    { "na_letter_8.5x11in",		2 },
+    { "na_monarch_3.875x7.5in",		80 },
+    { "na_number-10_4.125x9.5in",	81 }
+  };
+  static const pcl_map_t pcl_sources[] =// PCL media source values
+  {
+    { "auto",		7 },
+    { "by-pass-tray",	4 },
+    { "disc",		14 },
+    { "envelope",	6 },
+    { "large-capacity",	5 },
+    { "main",		1 },
+    { "manual",		2 },
+    { "right",		8 },
+    { "tray-1",		20 },
+    { "tray-2",		21 },
+    { "tray-3",		22 },
+    { "tray-4",		23 },
+    { "tray-5",		24 },
+    { "tray-6",		25 },
+    { "tray-7",		26 },
+    { "tray-8",		27 },
+    { "tray-9",		28 },
+    { "tray-10",	29 },
+    { "tray-11",	30 },
+    { "tray-12",	31 },
+    { "tray-13",	32 },
+    { "tray-14",	33 },
+    { "tray-15",	34 },
+    { "tray-16",	35 },
+    { "tray-17",	36 },
+    { "tray-18",	37 },
+    { "tray-19",	38 },
+    { "tray-20",	39 }
+  };
+  static const pcl_map_t pcl_types[] =	// PCL media type values
+  {
+    { "disc",			7 },
+    { "photographic",		3 },
+    { "stationery-inkjet",	2 },
+    { "stationery",		0 },
+    { "transparency",		4 }
   };
 
 
   papplLogJob(job, PAPPL_LOGLEVEL_DEBUG, "Starting page %u...", page);
-  int i;
-  for (i = 0; i < 16; i ++)
-    papplLogJob(job, PAPPL_LOGLEVEL_DEBUG, "DITHER %d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", options->dither[i][0], options->dither[i][1], options->dither[i][2], options->dither[i][3], options->dither[i][4], options->dither[i][5], options->dither[i][6], options->dither[i][7], options->dither[i][8], options->dither[i][9], options->dither[i][10], options->dither[i][11], options->dither[i][12], options->dither[i][13], options->dither[i][14], options->dither[i][15]);
 
   // Setup size based on margins...
-  pcl->width    = options->printer_resolution[0] * (options->media.size_width - options->media.left_margin - options->media.right_margin) / 2540;
-  pcl->height   = options->printer_resolution[1] * (options->media.size_length - options->media.top_margin - options->media.bottom_margin) / 2540;
-  pcl->linesize = (pcl->width + 7) / 8;
-  pcl->xstart   = options->printer_resolution[0] * options->media.left_margin / 2540;
-  pcl->xend     = pcl->xstart + pcl->width;
-  pcl->ystart   = options->printer_resolution[1] * options->media.top_margin / 2540;
-  pcl->yend     = pcl->ystart + pcl->height;
+  pcl->width  = options->printer_resolution[0] * (options->media.size_width - options->media.left_margin - options->media.right_margin) / 2540;
+  pcl->height = options->printer_resolution[1] * (options->media.size_length - options->media.top_margin - options->media.bottom_margin) / 2540;
+  pcl->xstart = options->printer_resolution[0] * options->media.left_margin / 2540;
+  pcl->xend   = pcl->xstart + pcl->width;
+  pcl->ystart = options->printer_resolution[1] * options->media.top_margin / 2540;
+  pcl->yend   = pcl->ystart + pcl->height;
 
-  // Setup printer/job attributes...
-  if ((!header->Duplex || (page & 1)) && header->MediaPosition && header->MediaPosition <= (unsigned)(sizeof(media_positions) / sizeof(media_positions[0])))
-    papplDevicePrintf(device, "\033&l%dH", media_positions[header->MediaPosition - 1]);
-					// Set media position
-
-  if (header->Duplex && pcl->is_deskjet)
+  switch (pcl->driver)
   {
-    // Handle duplexing on DeskJet printers...
-    papplDevicePuts(device, "\033&l-2H");
-					// Load media
+    case HP_DRIVER_DESKJET :
+    case HP_DRIVER_GENERIC :
+    case HP_DRIVER_LASERJET :
+	// Setup printer/job attributes...
+	if (options->sides == PAPPL_SIDES_ONE_SIDED || (page & 1))
+	{
+	  // Set media position
+	  for (i = 0; i < (sizeof(pcl_sources) / sizeof(pcl_sources[0])); i ++)
+	  {
+	    if (!strcmp(options->media.source, pcl_sources[i].keyword))
+	    {
+	      papplDevicePrintf(device, "\033&l%dH", pcl_sources[i].value);
+	      break;
+	    }
+	  }
 
-    if (page & 1)
-      papplDevicePuts(device, "\033&l2S");
-					// Set duplex mode
+	  // Set 6 LPI, 10 CPI
+	  papplDevicePuts(device, "\033&l6D\033&k12H");
+
+	  // Set portrait orientation
+	  papplDevicePuts(device, "\033&l0O");
+
+	  // Set page size
+	  for (i = 0; i < (sizeof(pcl_sizes) / sizeof(pcl_sizes[0])); i ++)
+	  {
+	    if (!strcmp(options->media.size_name, pcl_sizes[i].keyword))
+	    {
+	      papplDevicePrintf(device, "\033&l%dA", pcl_sizes[i].value);
+	      break;
+	    }
+	  }
+
+	  if (i >= (sizeof(pcl_sizes) / sizeof(pcl_sizes[0])))
+	  {
+	    // Custom size, set page length...
+	    papplDevicePrintf(device, "\033&l%dP", 6 * options->media.size_length / 2540);
+          }
+
+	  // Set media type
+	  for (i = 0; i < (sizeof(pcl_types) / sizeof(pcl_types[0])); i ++)
+	  {
+	    if (!strcmp(options->media.type, pcl_types[i].keyword))
+	    {
+	      papplDevicePrintf(device, "\033&l%dM", pcl_types[i].value);
+	      break;
+	    }
+	  }
+
+	  // Set top margin to 0
+	  papplDevicePuts(device, "\033&l0E");
+
+	  // Turn off perforation skip
+	  papplDevicePuts(device, "\033&l0L");
+
+	  // Set duplex mode...
+	  switch (options->sides)
+	  {
+	    case PAPPL_SIDES_ONE_SIDED :
+	        papplDevicePuts(device, "\033&l0S");
+	        break;
+	    case PAPPL_SIDES_TWO_SIDED_LONG_EDGE :
+	        papplDevicePuts(device, "\033&l2S");
+	        break;
+	    case PAPPL_SIDES_TWO_SIDED_SHORT_EDGE :
+	        papplDevicePuts(device, "\033&l1S");
+	        break;
+	  }
+	}
+	else
+	{
+	  // Set back side
+	  papplDevicePuts(device, "\033&a2G");
+	}
+
+	// DeskJet-specific commands...
+	if (pcl->driver == HP_DRIVER_DESKJET)
+	{
+	  // Set print quality...
+	  if (options->print_quality == IPP_QUALITY_HIGH || header->HWResolution[0] > 300)
+	    papplDevicePuts(device, "\033*o2M");
+	  else
+	    papplDevicePuts(device, "\033*o0M");
+
+	  // Handle duplexing...
+	  if (options->sides != PAPPL_SIDES_ONE_SIDED)
+	  {
+	    // Load media
+	    papplDevicePuts(device, "\033&l-2H");
+
+	    if (page & 1)
+	    {
+	      // Set duplex mode
+	      papplDevicePuts(device, "\033&l2S");
+	    }
+	  }
+	}
+
+	// Set resolution
+	papplDevicePrintf(device, "\033*t%uR", header->HWResolution[0]);
+
+	// Set graphics mode
+	if (header->cupsColorSpace == CUPS_CSPACE_SRGB)
+	{
+	  // KCMY
+	  pcl->num_planes = 4;
+	  papplDevicePuts(device, "\033*r-4U");
+	}
+	else
+	{
+	  // K
+	  pcl->num_planes = 1;
+	}
+
+	// Set size
+	papplDevicePrintf(device, "\033*r%uS\033*r%uT", pcl->width, pcl->height);
+
+        // Set position
+	papplDevicePrintf(device, "\033&a0H\033&a%.0fV", 720.0 * options->media.top_margin / 2540.0);
+
+        // Start graphics
+	papplDevicePuts(device, "\033*r1A");
+
+        // Allocate dithering plane buffers
+	pcl->linesize = (pcl->width + 7) / 8;
+
+	if ((pcl->planes[0] = malloc(pcl->linesize * pcl->num_planes)) == NULL)
+	{
+	  papplLogJob(job, PAPPL_LOGLEVEL_ERROR, "Memory allocation failure.");
+	  return (false);
+	}
+
+	for (plane = 1; plane < pcl->num_planes; plane ++)
+	  pcl->planes[plane] = pcl->planes[0] + plane * pcl->linesize;
+	break;
+
+    case HP_DRIVER_GENERIC6 :
+    case HP_DRIVER_GENERIC6C :
+        break;
   }
 
-  if (!header->Duplex || (page & 1))
+  // No blank lines yet...
+  pcl->feed = 0;
+
+  // Allocate memory for compression...
+  if ((pcl->comp_buffer = malloc(pcl->linesize * 2 + 2)) == NULL)
   {
-    // Set the media size...
-    int media_type = -1;		// Media type value
-
-    papplDevicePuts(device, "\033&l6D\033&k12H");
-					// Set 6 LPI, 10 CPI
-    papplDevicePuts(device, "\033&l0O");// Set portrait orientation
-
-    // Set page size
-    switch (header->PageSize[1])
-    {
-      case 540 : // Monarch Envelope
-          papplDevicePuts(device, "\033&l80A");
-	  break;
-
-      case 595 : // A5
-          papplDevicePuts(device, "\033&l25A");
-	  break;
-
-      case 624 : // DL Envelope
-          papplDevicePuts(device, "\033&l90A");
-	  break;
-
-      case 649 : // C5 Envelope
-          papplDevicePuts(device, "\033&l91A");
-	  break;
-
-      case 684 : // COM-10 Envelope
-          papplDevicePuts(device, "\033&l81A");
-	  break;
-
-      case 709 : // B5 Envelope
-          papplDevicePuts(device, "\033&l100A");
-	  break;
-
-      case 756 : // Executive
-          papplDevicePuts(device, "\033&l1A");
-	  break;
-
-      case 792 : // Letter
-          papplDevicePuts(device, "\033&l2A");
-	  break;
-
-      case 842 : // A4
-          papplDevicePuts(device, "\033&l26A");
-	  break;
-
-      case 1008 : // Legal
-          papplDevicePuts(device, "\033&l3A");
-	  break;
-
-      case 1191 : // A3
-          papplDevicePuts(device, "\033&l27A");
-	  break;
-
-      case 1224 : // Tabloid
-          papplDevicePuts(device, "\033&l6A");
-	  break;
-    }
-
-    papplDevicePrintf(device, "\033&l%dP", header->PageSize[1] / 12);
-					// Set page length
-    papplDevicePuts(device, "\033&l0E");// Set top margin to 0
-
-    // Set other job options...
-    papplDevicePrintf(device, "\033&l%dX", header->NumCopies);
-					// Set number of copies
-
-    if (!strcmp(header->MediaType, "stationery"))
-      media_type = 0;
-    else if (!strcmp(header->MediaType, "stationery-inkjet"))
-      media_type = 2;
-    else if (!strcmp(header->MediaType, "photographic"))
-      media_type = 3;
-    else if (!strcmp(header->MediaType, "transparency"))
-      media_type = 4;
-
-    if (media_type >= 0)
-      papplDevicePrintf(device, "\033&l%dM", media_type);
-					// Set PCL media type
-
-    int mode = header->Duplex ? 1 + header->Tumble != 0 : 0;
-
-    papplDevicePrintf(device, "\033&l%dS", mode);
-					// Set duplex mode
-    papplDevicePuts(device, "\033&l0L");// Turn off perforation skip
-  }
-  else
-    papplDevicePuts(device, "\033&a2G");// Set back side
-
-  if (pcl->is_deskjet)
-  {
-    // Set print quality...
-    if (options->print_quality == IPP_QUALITY_HIGH || header->HWResolution[0] > 300)
-      papplDevicePuts(device, "\033*o2M");
-    else
-      papplDevicePuts(device, "\033*o0M");
-  }
-
-  // Set graphics mode...
-  papplDevicePrintf(device, "\033*t%uR", header->HWResolution[0]);
-					// Set resolution
-
-  if (header->cupsColorSpace == CUPS_CSPACE_SRGB)
-  {
-    pcl->num_planes = 4;
-    papplDevicePuts(device, "\033*r-4U");
-					// Set KCMY graphics
-  }
-  else
-    pcl->num_planes = 1;		// Black&white graphics
-
-  // Set size and position of graphics...
-  papplDevicePrintf(device, "\033*r%uS", pcl->width);
-					// Set width
-  papplDevicePrintf(device, "\033*r%uT", pcl->height);
-					// Set height
-
-  papplDevicePuts(device, "\033&a0H");	// Set horizontal position
-
-  papplDevicePrintf(device, "\033&a%.0fV", 720.0 * options->media.top_margin / 2540.0);
-					// Set vertical position
-
-  papplDevicePuts(device, "\033*r1A");	// Start graphics
-
-  pcl->compression = 2;			// Packbits compression
-  papplDevicePrintf(device, "\033*b%uM", pcl->compression);
-					// Set compression
-
-  pcl->feed = 0;			// No blank lines yet
-
-  // Allocate memory for a line of graphics...
-  if ((pcl->planes[0] = malloc(pcl->linesize * pcl->num_planes)) == NULL)
-  {
-    papplLogJob(job, PAPPL_LOGLEVEL_ERROR, "Malloc failure...");
+    papplLogJob(job, PAPPL_LOGLEVEL_ERROR, "Memory allocation failure.");
     return (false);
   }
-
-  for (plane = 1; plane < pcl->num_planes; plane ++)
-    pcl->planes[plane] = pcl->planes[0] + plane * pcl->linesize;
-
-  if (pcl->compression)
-    pcl->comp_buffer = malloc(pcl->linesize * 2 + 2);
-  else
-    pcl->comp_buffer = NULL;
 
   return (true);
 }
@@ -967,104 +1128,114 @@ pcl_rwriteline(
   if (!(y & 127))
     papplLogJob(job, PAPPL_LOGLEVEL_DEBUG, "Printing line %u (%u%%)", y, 100 * (y - pcl->ystart) / pcl->height);
 
+  // Check whether the line is all whitespace...
   byte = options->header.cupsColorSpace == CUPS_CSPACE_K ? 0 : 255;
 
   if (*pixels != byte || memcmp(pixels, pixels + 1, header->cupsBytesPerLine - 1))
   {
-    // Output whitespace as needed...
-    if (pcl->feed > 0)
+    switch (pcl->driver)
     {
-      papplDevicePrintf(device, "\033*b%dY", pcl->feed);
-      pcl->feed = 0;
-    }
+      case HP_DRIVER_DESKJET :
+      case HP_DRIVER_GENERIC :
+      case HP_DRIVER_LASERJET :
+	  // Output whitespace as needed...
+	  if (pcl->feed > 0)
+	  {
+	    papplDevicePrintf(device, "\033*b%dY", pcl->feed);
+	    pcl->feed = 0;
+	  }
 
-    // Write bitmap data as needed...
-    dither = options->dither[y & 15];
+	  // Write bitmap data as needed...
+	  dither = options->dither[y & 15];
 
-    if (pcl->num_planes > 1)
-    {
-      // RGB
-      memset(pcl->planes[0], 0, pcl->num_planes * pcl->linesize);
+	  if (pcl->num_planes > 1)
+	  {
+	    // RGB
+	    memset(pcl->planes[0], 0, pcl->num_planes * pcl->linesize);
 
-      for (x = pcl->xstart, cptr = pcl->planes[1], mptr = pcl->planes[2], yptr = pcl->planes[3], kptr = pcl->planes[0], pixptr = pixels + 3 * pcl->xstart, bit = 128; x < pcl->xend; x ++)
-      {
-        if (*pixptr ++ < dither[x & 15])
-          *cptr |= bit;
-        if (*pixptr ++ < dither[x & 15])
-          *mptr |= bit;
-        if (*pixptr ++ < dither[x & 15])
-          *yptr |= bit;
+	    for (x = pcl->xstart, cptr = pcl->planes[1], mptr = pcl->planes[2], yptr = pcl->planes[3], kptr = pcl->planes[0], pixptr = pixels + 3 * pcl->xstart, bit = 128; x < pcl->xend; x ++)
+	    {
+	      if (*pixptr ++ < dither[x & 15])
+		*cptr |= bit;
+	      if (*pixptr ++ < dither[x & 15])
+		*mptr |= bit;
+	      if (*pixptr ++ < dither[x & 15])
+		*yptr |= bit;
 
-        if (bit == 1)
-        {
-          *kptr   = *cptr & *mptr & *yptr;
-          byte    = ~*kptr;
-          *cptr++ &= byte;
-          *mptr++ &= byte;
-          *yptr++ &= byte;
-          kptr ++;
-          bit = 128;
-        }
-        else
-          bit /= 2;
-      }
-    }
-    else if (header->cupsBitsPerPixel == 8)
-    {
-      memset(pcl->planes[0], 0, pcl->linesize);
+	      if (bit == 1)
+	      {
+		*kptr   = *cptr & *mptr & *yptr;
+		byte    = ~*kptr;
+		*cptr++ &= byte;
+		*mptr++ &= byte;
+		*yptr++ &= byte;
+		kptr ++;
+		bit = 128;
+	      }
+	      else
+		bit /= 2;
+	    }
+	  }
+	  else if (header->cupsBitsPerPixel == 8)
+	  {
+	    memset(pcl->planes[0], 0, pcl->linesize);
 
-      if (header->cupsColorSpace == CUPS_CSPACE_K)
-      {
-        // 8 bit black
-        for (x = pcl->xstart, kptr = pcl->planes[0], pixptr = pixels + pcl->xstart, bit = 128, byte = 0; x < pcl->xend; x ++, pixptr ++)
-        {
-          if (*pixptr >= dither[x & 15])
-            byte |= bit;
+	    if (header->cupsColorSpace == CUPS_CSPACE_K)
+	    {
+	      // 8 bit black
+	      for (x = pcl->xstart, kptr = pcl->planes[0], pixptr = pixels + pcl->xstart, bit = 128, byte = 0; x < pcl->xend; x ++, pixptr ++)
+	      {
+		if (*pixptr >= dither[x & 15])
+		  byte |= bit;
 
-          if (bit == 1)
-          {
-            *kptr++ = byte;
-            byte    = 0;
-            bit     = 128;
-          }
-          else
-            bit /= 2;
-        }
+		if (bit == 1)
+		{
+		  *kptr++ = byte;
+		  byte    = 0;
+		  bit     = 128;
+		}
+		else
+		  bit /= 2;
+	      }
 
-        if (bit < 128)
-          *kptr = byte;
-      }
-      else
-      {
-        // 8 bit gray
-        for (x = pcl->xstart, kptr = pcl->planes[0], pixptr = pixels + pcl->xstart, bit = 128, byte = 0; x < pcl->xend; x ++, pixptr ++)
-        {
-          if (*pixptr < dither[x & 15])
-            byte |= bit;
+	      if (bit < 128)
+		*kptr = byte;
+	    }
+	    else
+	    {
+	      // 8 bit gray
+	      for (x = pcl->xstart, kptr = pcl->planes[0], pixptr = pixels + pcl->xstart, bit = 128, byte = 0; x < pcl->xend; x ++, pixptr ++)
+	      {
+		if (*pixptr < dither[x & 15])
+		  byte |= bit;
 
-          if (bit == 1)
-          {
-            *kptr++ = byte;
-            byte    = 0;
-            bit     = 128;
-          }
-          else
-            bit /= 2;
-        }
+		if (bit == 1)
+		{
+		  *kptr++ = byte;
+		  byte    = 0;
+		  bit     = 128;
+		}
+		else
+		  bit /= 2;
+	      }
 
-        if (bit < 128)
-          *kptr = byte;
-      }
-    }
-    else
-    {
-      // 1-bit B&W
-      memcpy(pcl->planes[0], pixels + pcl->xstart / 8, pcl->linesize);
-    }
+	      if (bit < 128)
+		*kptr = byte;
+	    }
+	  }
+	  else
+	  {
+	    // 1-bit B&W
+	    memcpy(pcl->planes[0], pixels + pcl->xstart / 8, pcl->linesize);
+	  }
 
-    for (plane = 0; plane < pcl->num_planes; plane ++)
-    {
-      pcl_compress_data(job, device, pcl->planes[plane], pcl->linesize, plane < (pcl->num_planes - 1) ? 'V' : 'W', pcl->compression);
+	  for (plane = 0; plane < pcl->num_planes; plane ++)
+	    pcl_compress_data(job, device, pcl->planes[plane], pcl->linesize, plane);
+	  break;
+
+      case HP_DRIVER_GENERIC6 :
+      case HP_DRIVER_GENERIC6C :
+          break;
     }
 
     papplDeviceFlush(device);
@@ -1085,26 +1256,33 @@ pcl_status(
     pappl_printer_t *printer)		// I - Printer
 {
   pappl_device_t	*device;	// Printer device
-  int			num_supply;	// Number of supplies
   pappl_supply_t	supply[32];	// Printer supply information
+  const char		*name;		// Printer driver name
 
+
+  if (papplPrinterGetSupplies(printer, 0, supply) > 0)
+  {
+    // Already have supplies, just return...
+    return (true);
+  }
 
   papplLogPrinter(printer, PAPPL_LOGLEVEL_DEBUG, "Checking status...");
 
   // First try to query the supply levels via SNMP...
   if ((device = papplPrinterOpenDevice(printer)) != NULL)
   {
-    if ((num_supply = papplDeviceGetSupplies(device, (int)(sizeof(supply) / sizeof(supply[0])), supply)) > 0)
-      papplPrinterSetSupplies(printer, num_supply, supply);
+    bool success = pcl_update_status(printer, device);
 
     papplPrinterCloseDevice(printer);
 
-    if (num_supply > 0)
+    if (success)
       return (true);
   }
 
   // Otherwise make sure we have some dummy data to make clients happy...
-  if (!strcmp(papplPrinterGetDriverName(printer), "hp_deskjet"))
+  name = papplPrinterGetDriverName(printer);
+
+  if (!strcmp(name, "hp_deskjet"))
   {
     static pappl_supply_t inkjet[5] =	// Dummy inkjet supply level data
     {
@@ -1115,20 +1293,53 @@ pcl_status(
       { PAPPL_SUPPLY_COLOR_NO_COLOR, "Waste Ink Tank", true, 50, PAPPL_SUPPLY_TYPE_WASTE_INK }
     };
 
-    if (papplPrinterGetSupplies(printer, 0, supply) == 0)
-      papplPrinterSetSupplies(printer, (int)(sizeof(inkjet) / sizeof(inkjet[0])), inkjet);
+    papplPrinterSetSupplies(printer, (int)(sizeof(inkjet) / sizeof(inkjet[0])), inkjet);
+  }
+  else if (!strcmp(name, "hp_generic6c"))
+  {
+    static pappl_supply_t claser[4] =	// Dummy color laser supply level data
+    {
+      { PAPPL_SUPPLY_COLOR_CYAN,     "Cyan Toner",    true, 20, PAPPL_SUPPLY_TYPE_TONER },
+      { PAPPL_SUPPLY_COLOR_MAGENTA,  "Magenta Toner", true, 40, PAPPL_SUPPLY_TYPE_TONER },
+      { PAPPL_SUPPLY_COLOR_YELLOW,   "Yellow Toner",  true, 60, PAPPL_SUPPLY_TYPE_TONER },
+      { PAPPL_SUPPLY_COLOR_BLACK,    "Black Toner",   true, 80, PAPPL_SUPPLY_TYPE_TONER }
+    };
+
+    papplPrinterSetSupplies(printer, (int)(sizeof(claser) / sizeof(claser[0])), claser);
   }
   else
   {
-    static pappl_supply_t laser[2] =	// Dummy laser supply level data
+    static pappl_supply_t laser[1] =	// Dummy laser supply level data
     {
-      { PAPPL_SUPPLY_COLOR_BLACK,    "Black Toner", true, 80, PAPPL_SUPPLY_TYPE_TONER },
-      { PAPPL_SUPPLY_COLOR_NO_COLOR, "Waste Toner", true, 40, PAPPL_SUPPLY_TYPE_WASTE_TONER }
+      { PAPPL_SUPPLY_COLOR_BLACK,    "Black Toner", true, 80, PAPPL_SUPPLY_TYPE_TONER }
     };
 
-    if (papplPrinterGetSupplies(printer, 0, supply) == 0)
-      papplPrinterSetSupplies(printer, (int)(sizeof(laser) / sizeof(laser[0])), laser);
+    papplPrinterSetSupplies(printer, (int)(sizeof(laser) / sizeof(laser[0])), laser);
   }
 
   return (true);
 }
+
+
+//
+// 'pcl_update_status()' - Update the supply levels and status.
+//
+
+static bool				// O - `true` on success, `false` otherwise
+pcl_update_status(
+    pappl_printer_t *printer,		// I - Printer
+    pappl_device_t  *device)		// I - Device
+{
+  int			num_supply;	// Number of supplies
+  pappl_supply_t	supply[32];	// Printer supply information
+  pappl_preason_t	reasons;	// Printer state reasons
+
+
+  if ((num_supply = papplDeviceGetSupplies(device, (int)(sizeof(supply) / sizeof(supply[0])), supply)) > 0)
+    papplPrinterSetSupplies(printer, num_supply, supply);
+
+  papplPrinterSetReasons(printer, papplDeviceGetStatus(device), PAPPL_PREASON_DEVICE_STATUS);
+
+  return (num_supply > 0);
+}
+
