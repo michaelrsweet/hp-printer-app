@@ -406,9 +406,9 @@ pcl_callback(
   {
     /* Make and model name */
     if (driver_name[11] == 'c')
-      papplCopyString(driver_data->make_and_model, "Generic PCL 6 Monochrome", sizeof(driver_data->make_and_model));
-    else
       papplCopyString(driver_data->make_and_model, "Generic PCL 6 Color", sizeof(driver_data->make_and_model));
+    else
+      papplCopyString(driver_data->make_and_model, "Generic PCL 6 Monochrome", sizeof(driver_data->make_and_model));
 
     /* Icons */
     driver_data->icons[0].data    = hp_generic_sm_png;
@@ -431,12 +431,24 @@ pcl_callback(
     driver_data->y_resolution[1] = 600;
     driver_data->x_default = driver_data->y_default = 300;
 
-    /* Four color spaces - black (1-bit and 8-bit), grayscale, and sRGB */
-    driver_data->raster_types = PAPPL_PWG_RASTER_TYPE_BLACK_1 | PAPPL_PWG_RASTER_TYPE_BLACK_8 | PAPPL_PWG_RASTER_TYPE_SGRAY_8 | PAPPL_PWG_RASTER_TYPE_SRGB_8;
+    if (driver_name[11] == 'c')
+    {
+      /* Four color spaces - black (1-bit and 8-bit), grayscale, and sRGB */
+      driver_data->raster_types = PAPPL_PWG_RASTER_TYPE_BLACK_1 | PAPPL_PWG_RASTER_TYPE_BLACK_8 | PAPPL_PWG_RASTER_TYPE_SGRAY_8 | PAPPL_PWG_RASTER_TYPE_SRGB_8;
 
-    /* Color modes: auto (default), monochrome, and color */
-    driver_data->color_supported = PAPPL_COLOR_MODE_AUTO | PAPPL_COLOR_MODE_AUTO_MONOCHROME | PAPPL_COLOR_MODE_COLOR | PAPPL_COLOR_MODE_MONOCHROME;
-    driver_data->color_default   = PAPPL_COLOR_MODE_AUTO;
+      /* Color modes: auto (default), monochrome, and color */
+      driver_data->color_supported = PAPPL_COLOR_MODE_AUTO | PAPPL_COLOR_MODE_AUTO_MONOCHROME | PAPPL_COLOR_MODE_COLOR | PAPPL_COLOR_MODE_MONOCHROME;
+      driver_data->color_default   = PAPPL_COLOR_MODE_AUTO;
+    }
+    else
+    {
+      /* Three color spaces - black (1-bit and 8-bit) and grayscale */
+      driver_data->raster_types = PAPPL_PWG_RASTER_TYPE_BLACK_1 | PAPPL_PWG_RASTER_TYPE_BLACK_8 | PAPPL_PWG_RASTER_TYPE_SGRAY_8;
+
+      /* Color modes: monochrome */
+      driver_data->color_supported = PAPPL_COLOR_MODE_MONOCHROME;
+      driver_data->color_default   = PAPPL_COLOR_MODE_MONOCHROME;
+    }
 
     driver_data->num_media = (int)(sizeof(pcl_generic_pcl_media) / sizeof(pcl_generic_pcl_media[0]));
     memcpy(driver_data->media, pcl_generic_pcl_media, sizeof(pcl_generic_pcl_media));
@@ -462,7 +474,7 @@ pcl_callback(
     driver_data->type[4]  = "envelope";
     driver_data->type[5]  = "transparency";
 
-    driver_data->left_right = 635;	// 1/4" left and right
+    driver_data->left_right = 423;	// 1/6" left and right
     driver_data->bottom_top = 423;	// 1/6" top and bottom
 
     for (i = 0; i < driver_data->num_source; i ++)
@@ -530,8 +542,8 @@ pcl_callback(
     driver_data->type[4]  = "envelope";
     driver_data->type[5]  = "transparency";
 
-    driver_data->left_right = 423;	 // 1/6" left and right
-    driver_data->bottom_top = 423;	 // 1/6" top and bottom
+    driver_data->left_right = 635;	// 1/4" left and right
+    driver_data->bottom_top = 423;	// 1/6" top and bottom
 
     for (i = 0; i < driver_data->num_source; i ++)
     {
