@@ -87,7 +87,7 @@ static const char * const pcl_generic_pcl_media[] =
   "na_legal_8.5x14in",
   "na_letter_8.5x11in",
   "na_executive_7x10in",
-  "iso_a3_297x420mm"
+  "iso_a3_297x420mm",
   "iso_a4_210x297mm",
   "iso_a5_148x210mm",
   "jis_b5_182x257mm",
@@ -104,7 +104,7 @@ static const char * const pcl_hp_laserjet_media[] =
   "na_legal_8.5x14in",
   "na_letter_8.5x11in",
   "na_executive_7x10in",
-  "iso_a3_297x420mm"
+  "iso_a3_297x420mm",
   "iso_a4_210x297mm",
   "iso_a5_148x210mm",
   "jis_b5_182x257mm",
