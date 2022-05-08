@@ -17,6 +17,16 @@
 
 
 //
+// PCL 6/PCL-XL support is current experimental and I've run into enough
+// printers that can't handle the current code that I'm uncomfortable enabling
+// it by default.  Define "WITH_PCL6" to enable the code, otherwise only the
+// PCL 3/5 drivers are enabled.
+//
+
+//#define WITH_PCL6
+
+
+//
 // Constants...
 //
 
@@ -24,11 +34,14 @@ typedef enum hp_driver_e		// Drivers
 {
   HP_DRIVER_DESKJET,			// PCL 3 Deskjet
   HP_DRIVER_GENERIC,			// PCL 5 generic
+#if WITH_PCL6
   HP_DRIVER_GENERIC6,			// PCL 6 generic B&W
   HP_DRIVER_GENERIC6C,			// PCL 6 generic color
+#endif // WITH_PCL6
   HP_DRIVER_LASERJET			// PCL 5 LaserJet
 } hp_driver_t;
 
+#if WITH_PCL6
 enum pcl6_attr
 {
   PCL6_ATTR_COLOR_SPACE = 3,
@@ -168,7 +181,9 @@ enum pcl6_enc
   PCL6_ENC_REAL32_BOX = 0xe5,
 
   PCL6_ENC_ATTR_UBYTE = 0xf8,
-  PCL6_ENC_ATTR_UINT16 = 0xf9
+  PCL6_ENC_ATTR_UINT16 = 0xf9,
+  PCL6_ENC_EMBEDDED_DATA = 0xfa,
+  PCL6_ENC_EMBEDDED_DATA_BYTE = 0xfb
 };
 
 enum pcl6_error_report
@@ -253,6 +268,7 @@ enum pcl6_simplex_page_mode
 {
   PCL6_E_SIMPLEX_FRONT_SIDE
 };
+#endif // WITH_PCL6
 
 
 //
@@ -291,8 +307,10 @@ static pappl_pr_driver_t pcl_drivers[] =   // Driver information
 {   /* name */          /* description */	/* device ID */	/* extension */
   { "hp_deskjet",	"HP Deskjet series",	NULL,		NULL },
   { "hp_generic",	"Generic PCL 5",	"CMD:PCL;",	NULL },
+#if WITH_PCL6
   { "hp_generic6",	"Generic PCL 6/XL",	NULL,		NULL },
   { "hp_generic6c",	"Generic Color PCL 6/XL", "CMD:PCLXL;",	NULL },
+#endif // WITH_PCL6
   { "hp_laserjet",	"HP LaserJet series",	NULL,		NULL },
 };
 
@@ -362,12 +380,15 @@ static bool	pcl_rwriteline(pappl_job_t *job, pappl_pr_options_t *options, pappl_
 static void	pcl_setup(pappl_system_t *system);
 static bool	pcl_status(pappl_printer_t *printer);
 static bool	pcl_update_status(pappl_printer_t *printer, pappl_device_t *device);
+#if WITH_PCL6
 static void	pcl6_write_command(pappl_device_t *device, enum pcl6_cmd command);
+static void	pcl6_write_data(pappl_device_t *device, const unsigned char *buffer, size_t length);
 //static void	pcl6_write_string(pappl_device_t *device, const char *s, enum pcl6_attr attr);
 static void	pcl6_write_ubyte(pappl_device_t *device, unsigned n, enum pcl6_attr attr);
 static void	pcl6_write_uint16(pappl_device_t *device, unsigned n, enum pcl6_attr attr);
 static void	pcl6_write_uint32(pappl_device_t *device, unsigned n, enum pcl6_attr attr);
 static void	pcl6_write_xy(pappl_device_t *device, unsigned x, unsigned y, enum pcl6_attr attr);
+#endif // WITH_PCL6
 
 
 //
@@ -638,6 +659,7 @@ pcl_callback(
         snprintf(driver_data->media_ready[i].size_name, sizeof(driver_data->media_ready[i].size_name), "env_10_4.125x9.5in");
     }
   }
+#if WITH_PCL6
   else if (!strncmp(driver_name, "hp_generic6", 11))
   {
     // Native format...
@@ -726,6 +748,7 @@ pcl_callback(
         snprintf(driver_data->media_ready[i].size_name, sizeof(driver_data->media_ready[i].size_name), "env_10_4.125x9.5in");
     }
   }
+#endif // WITH_PCL6
   else if (!strcmp(driver_name, "hp_laserjet"))
   {
     /* Make and model name */
@@ -931,19 +954,22 @@ pcl_compress_data(
 	papplDeviceWrite(device, line_ptr, (size_t)(line_end - line_ptr));
 	break;
 
+#if WITH_PCL6
     case HP_DRIVER_GENERIC6 :
     case HP_DRIVER_GENERIC6C :
         count = (unsigned)(line_end - line_ptr);
-        count = (count + 3) & ~3;
+        if (!comp)
+          count = (count + 3) & ~3;	// Pad to 32-bit boundary
 
         pcl6_write_uint16(device, y - pcl->ystart, PCL6_ATTR_START_LINE);
         pcl6_write_uint16(device, 1, PCL6_ATTR_BLOCK_HEIGHT);
         pcl6_write_ubyte(device, comp ? PCL6_E_RLE_COMPRESSION : PCL6_E_NO_COMPRESSION, PCL6_ATTR_COMPRESS_MODE);
 //	pcl6_write_ubyte(device, 1, PCL6_ATTR_PAD_BYTES_MULTIPLE);
-        pcl6_write_uint32(device, count, PCL6_ATTR_BLOCK_BYTE_LENGTH);
+//        pcl6_write_uint32(device, count, PCL6_ATTR_BLOCK_BYTE_LENGTH);
         pcl6_write_command(device, PCL6_CMD_READ_IMAGE);
-        papplDeviceWrite(device, line_ptr, count);
+        pcl6_write_data(device, line_ptr, count);
         break;
+#endif // WITH_PCL6
   }
 }
 
@@ -1013,11 +1039,13 @@ pcl_rendjob(
 	papplDevicePuts(device, "\033E");
 	break;
 
+#if WITH_PCL6
     case HP_DRIVER_GENERIC6 :
     case HP_DRIVER_GENERIC6C :
         pcl6_write_command(device, PCL6_CMD_END_SESSION);
 	papplDevicePuts(device, "\033%-12345X");
 	break;
+#endif // WITH_PCL6
   }
 
   free(pcl);
@@ -1069,12 +1097,14 @@ pcl_rendpage(
 	}
 	break;
 
+#if WITH_PCL6
     case HP_DRIVER_GENERIC6 :
     case HP_DRIVER_GENERIC6C :
         pcl6_write_command(device, PCL6_CMD_END_IMAGE);
         pcl6_write_command(device, PCL6_CMD_CLOSE_DATA_SOURCE);
         pcl6_write_command(device, PCL6_CMD_END_PAGE);
 	break;
+#endif // WITH_PCL6
   }
 
   papplDeviceFlush(device);
@@ -1133,6 +1163,7 @@ pcl_rstartjob(
 	papplDevicePuts(device, "\033E");
 	break;
 
+#if WITH_PCL6
     case HP_DRIVER_GENERIC6 :
     case HP_DRIVER_GENERIC6C :
         // Send a PCL XL start sequence
@@ -1147,6 +1178,7 @@ pcl_rstartjob(
         pcl6_write_ubyte(device, PCL6_E_ERROR_PAGE, PCL6_ATTR_ERROR_REPORT);
         pcl6_write_command(device, PCL6_CMD_BEGIN_SESSION);
         break;
+#endif // WITH_PCL6
   }
 
   return (true);
@@ -1226,6 +1258,7 @@ pcl_rstartpage(
     { "stationery",		0 },
     { "transparency",		4 }
   };
+#if WITH_PCL6
   static const pcl_map_t pcl6_sizes[] =	// PCL media size values
   {
     { "iso_a3_297x420mm",		PCL6_E_A3_PAPER },
@@ -1272,6 +1305,7 @@ pcl_rstartpage(
     { "tray-19",	PCL6_E_TRAY_19 },
     { "tray-20",	PCL6_E_TRAY_20 }
   };
+#endif // WITH_PCL6
 
 
   papplLogJob(job, PAPPL_LOGLEVEL_DEBUG, "Starting page %u...", page);
@@ -1421,6 +1455,7 @@ pcl_rstartpage(
 	  pcl->planes[plane] = pcl->planes[0] + plane * pcl->linesize;
 	break;
 
+#if WITH_PCL6
     case HP_DRIVER_GENERIC6 :
     case HP_DRIVER_GENERIC6C :
         if (pcl->width & 3)
@@ -1503,6 +1538,7 @@ pcl_rstartpage(
 
         pcl->linesize = (pcl->linesize + 3) & ~3;
         break;
+#endif // WITH_PCL6
   }
 
   // No blank lines yet...
@@ -1663,10 +1699,13 @@ pcl_rwriteline(
 	  pcl->feed ++;
 	break;
 
+#if WITH_PCL6
     case HP_DRIVER_GENERIC6 :
     case HP_DRIVER_GENERIC6C :
-	pcl_compress_data(pcl, device, y, pixels + pcl->xstart * header->cupsBitsPerPixel / 8, pcl->linesize, 0);
+	if (*pixels != byte || memcmp(pixels, pixels + 1, header->cupsBytesPerLine - 1))
+	  pcl_compress_data(pcl, device, y, pixels + pcl->xstart * header->cupsBitsPerPixel / 8, pcl->linesize, 0);
 	break;
+#endif // WITH_PCL6
   }
 
   return (true);
@@ -1770,6 +1809,7 @@ pcl_update_status(
 }
 
 
+#if WITH_PCL6
 //
 // 'pcl6_write_command()' - Write a command without attributes.
 //
@@ -1784,6 +1824,43 @@ pcl6_write_command(
 
   buffer[0] = (unsigned char)command;
   papplDeviceWrite(device, buffer, 1);
+}
+
+
+//
+// 'pcl6_write_data()' - Write a buffer of embedded data.
+//
+
+static void
+pcl6_write_data(
+    pappl_device_t      *device,	// I - Output device
+    const unsigned char *buffer,	// I - Data to write
+    size_t              length)		// I - Number of bytes
+{
+  unsigned char	length_buf[5];		// Embedded length prefix
+
+
+  if (length < 0x100)
+  {
+    // Length < 256 bytes
+    length_buf[0] = PCL6_ENC_EMBEDDED_DATA_BYTE;
+    length_buf[1] = (unsigned char)length;
+
+    papplDeviceWrite(device, length_buf, 2);
+  }
+  else
+  {
+    // Length >= 256 bytes
+    length_buf[0] = PCL6_ENC_EMBEDDED_DATA;
+    length_buf[1] = (unsigned char)length;
+    length_buf[2] = (unsigned char)(length >> 8);
+    length_buf[3] = (unsigned char)(length >> 16);
+    length_buf[4] = (unsigned char)(length >> 24);
+
+    papplDeviceWrite(device, length_buf, 5);
+  }
+
+  papplDeviceWrite(device, buffer, length);
 }
 
 
@@ -1990,3 +2067,4 @@ pcl6_write_xy(
 
   papplDeviceWrite(device, buffer, (size_t)(bufptr - buffer));
 }
+#endif // WITH_PCL6
