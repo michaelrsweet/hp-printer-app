@@ -27,7 +27,7 @@ unitdir 	=	`pkg-config --variable=systemdsystemunitdir systemd`
 CSFLAGS		=	-s "$${CODESIGN_IDENTITY:=-}" --timestamp -o runtime
 OPTIM		=	-g
 CFLAGS		=	$(CPPFLAGS) $(OPTIM)
-CPPFLAGS	=	'-DVERSION="$(VERSION)"' `cups-config --cflags` `pkg-config --cflags pappl`
+CPPFLAGS	=	'-DVERSION="$(VERSION)"' `cups-config --cflags` `pkg-config --cflags pappl` $(OPTIONS)
 ICONS		=	\
 			icons/hp-deskjet-lg.png \
 			icons/hp-deskjet-md.png \
@@ -41,10 +41,17 @@ ICONS		=	\
 LDFLAGS		=	$(OPTIM) `cups-config --ldflags`
 LIBS		=	`pkg-config --libs pappl` `cups-config --image --libs`
 
+# Uncomment the following line to enable experimental PCL 6 support
+#OPTIONS	=	-DWITH_PCL6=1
+
 
 # Targets...
-OBJS		=	hp-printer-app.o
-TARGETS		=	hp-printer-app
+OBJS		=	\
+			decode-pcl6.o \
+			hp-printer-app.o
+TARGETS		=	\
+			decode-pcl6 \
+			hp-printer-app
 
 
 # General build rules...
@@ -64,7 +71,7 @@ clean:
 install:	$(TARGETS)
 	echo "Installing program to $(bindir)..."
 	mkdir -p $(bindir)
-	cp $(TARGETS) $(bindir)
+	cp hp-printer-app $(bindir)
 	echo "Installing documentation to $(mandir)..."
 	mkdir -p $(mandir)/man1
 	cp hp-printer-app.1 $(mandir)/man1
@@ -74,9 +81,13 @@ install:	$(TARGETS)
 		cp hp-printer-app.service $(unitdir); \
 	fi
 
-hp-printer-app:	$(OBJS)
+hp-printer-app:	hp-printer-app.o
 	echo "Linking $@..."
-	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ hp-printer-app.o $(LIBS)
+
+decode-pcl6:	decode-pcl6.o
+	echo "Linking $@..."
+	$(CC) $(LDFLAGS) -o $@ decode-pcl6.o
 
 $(OBJS):	icons.h Makefile
 

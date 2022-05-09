@@ -1,6 +1,12 @@
 HP Printer Application
 ======================
 
+![Version](https://img.shields.io/github/v/release/michaelrsweet/hp-printer-app?include_prereleases)
+![Apache 2.0](https://img.shields.io/github/license/michaelrsweet/hp-printer-app)
+[![LGTM Grade](https://img.shields.io/lgtm/grade/cpp/github/michaelrsweet/hp-printer-app)](https://lgtm.com/projects/g/michaelrsweet/hp-printer-app/context:cpp)
+[![LGTM Alerts](https://img.shields.io/lgtm/alerts/github/michaelrsweet/hp-printer-app)](https://lgtm.com/projects/g/michaelrsweet/hp-printer-app/)
+
+
 `hp-printer-app` implements printing for a variety of common PCL printers
 connected via network or USB.  Features include:
 
@@ -122,9 +128,10 @@ Supported Printers
 
 The following printers are currently supported:
 
-- HP LaserJet printers with PCL language support
-- Most HP DeskJet and Photosmart printers
-- PCL laser printers from Canon, IBM, Lexmark, Kyocera, Ricoh, Xerox, etc.
+- HP LaserJet printers with PCL 5 language support
+- Most HP DeskJet, OfficeJet, and Photosmart printers
+- Laser printers with PCL 5 support from Canon, IBM, Lexmark, Kyocera, Ricoh,
+  Xerox, etc.
 
 
 Standards
