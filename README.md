@@ -3,8 +3,6 @@ HP Printer Application
 
 ![Version](https://img.shields.io/github/v/release/michaelrsweet/hp-printer-app?include_prereleases)
 ![Apache 2.0](https://img.shields.io/github/license/michaelrsweet/hp-printer-app)
-[![LGTM Grade](https://img.shields.io/lgtm/grade/cpp/github/michaelrsweet/hp-printer-app)](https://lgtm.com/projects/g/michaelrsweet/hp-printer-app/context:cpp)
-[![LGTM Alerts](https://img.shields.io/lgtm/alerts/github/michaelrsweet/hp-printer-app)](https://lgtm.com/projects/g/michaelrsweet/hp-printer-app/)
 
 
 `hp-printer-app` implements printing for a variety of common PCL printers
