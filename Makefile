@@ -25,9 +25,16 @@ unitdir 	=	`pkg-config --variable=systemdsystemunitdir systemd`
 
 # Compiler/linker options...
 CSFLAGS		=	-s "$${CODESIGN_IDENTITY:=-}" --timestamp -o runtime
-OPTIM		=	-g
 CFLAGS		=	$(CPPFLAGS) $(OPTIM)
 CPPFLAGS	=	'-DVERSION="$(VERSION)"' `cups-config --cflags` `pkg-config --cflags pappl` $(OPTIONS)
+LDFLAGS		=	$(OPTIM) `cups-config --ldflags`
+LIBS		=	`pkg-config --libs pappl` `cups-config --image --libs`
+OPTIM		=	-Os -g
+# Uncomment the following line to enable experimental PCL 6 support
+#OPTIONS	=	-DWITH_PCL6=1
+
+
+# Resources...
 ICONS		=	\
 			icons/hp-deskjet-lg.png \
 			icons/hp-deskjet-md.png \
@@ -38,11 +45,6 @@ ICONS		=	\
 			icons/hp-laserjet-lg.png \
 			icons/hp-laserjet-md.png \
 			icons/hp-laserjet-sm.png
-LDFLAGS		=	$(OPTIM) `cups-config --ldflags`
-LIBS		=	`pkg-config --libs pappl` `cups-config --image --libs`
-
-# Uncomment the following line to enable experimental PCL 6 support
-#OPTIONS	=	-DWITH_PCL6=1
 
 
 # Targets...
@@ -75,7 +77,7 @@ install:	$(TARGETS)
 	echo "Installing documentation to $(mandir)..."
 	mkdir -p $(mandir)/man1
 	cp hp-printer-app.1 $(mandir)/man1
-	if test "x$(unitdir)" != x; then \
+	if pkg-config --exists systemd; then \
 		echo "Installing systemd service to $(unitdir)..."; \
 		mkdir -p $(unitdir); \
 		cp hp-printer-app.service $(unitdir); \
@@ -113,7 +115,7 @@ macos:
 	sed -e '1,$$s/@VERSION@/$(VERSION)/' <hp-printer-app.plist.in >"/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app/Contents/Info.plist"
 	ln -s "/Applications/HP Printer App.app/Contents/MacOS/hp-printer-app" "/private/tmp/hp-printer-app-$(VERSION)/usr/local/bin/hp-printer-app"
 	echo "Signing macOS app bundle..."
-	codesign $(CSFLAGS) "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app"
+	codesign $(CSFLAGS) --entitlements hp-printer-app.entitlements "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app"
 	echo "Creating archive for notarization..."
 	rm -f hp-printer-app.zip
 	ditto -c -k --keepParent "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app" hp-printer-app.zip
