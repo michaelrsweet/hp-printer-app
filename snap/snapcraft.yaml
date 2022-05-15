@@ -22,7 +22,7 @@ apps:
         plugs: [avahi-control, home, network, network-bind, network-manager, raw-usb]
 
     hp-printer-app-server:
-        command: usr/local/bin/hp-printer-app server -o log-file=syslog
+        command: usr/local/bin/hp-printer-app-server
         daemon: simple
         plugs: [avahi-control, home, network, network-bind, network-manager, raw-usb]
 
@@ -38,3 +38,12 @@ parts:
         plugin: make
         source: .
         after: [pappl]
+
+    scripts:
+        plugin: dump
+        source: snap/local/
+        organize:
+          hp-printer-app-server: usr/local/bin/
+        prime:
+          - usr/local/bin/
+        after: [hp-printer-app]
