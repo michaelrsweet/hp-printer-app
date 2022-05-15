@@ -27,6 +27,16 @@
 
 
 //
+// CUPS v3 makes some API changes.  These defines allow the same code to work
+// for the v2 and v3 APIs...
+//
+
+#  if CUPS_VERSION_MAJOR < 3
+#    define cups_page_header_t cups_page_header2_t
+#  endif // CUPS_VERSION_MAJOR < 3
+
+
+//
 // Constants...
 //
 
@@ -1199,7 +1209,7 @@ pcl_rstartpage(
   size_t	i;			// Looping var
   unsigned	plane,			// Looping var
 		length;			// Bytes to write
-  cups_page_header2_t *header = &(options->header);
+  cups_page_header_t *header = &(options->header);
 					// Page header
   pcl_t		*pcl = (pcl_t *)papplJobGetData(job);
 					// Job data
@@ -1567,7 +1577,7 @@ pcl_rwriteline(
     unsigned            y,		// I - Line number
     const unsigned char *pixels)	// I - Line
 {
-  cups_page_header2_t	*header = &(options->header);
+  cups_page_header_t	*header = &(options->header);
 					// Page header
   pcl_t			*pcl = (pcl_t *)papplJobGetData(job);
 					// Job data
