@@ -26,9 +26,9 @@ unitdir 	=	`pkg-config --variable=systemdsystemunitdir systemd`
 # Compiler/linker options...
 CSFLAGS		=	-s "$${CODESIGN_IDENTITY:=-}" --timestamp -o runtime
 CFLAGS		=	$(CPPFLAGS) $(OPTIM)
-CPPFLAGS	=	'-DVERSION="$(VERSION)"' `cups-config --cflags` `pkg-config --cflags pappl` $(OPTIONS)
+CPPFLAGS	=	'-DVERSION="$(VERSION)"' `pkg-config --cflags cups` `pkg-config --cflags pappl` $(OPTIONS)
 LDFLAGS		=	$(OPTIM) `cups-config --ldflags`
-LIBS		=	`pkg-config --libs pappl` `cups-config --image --libs`
+LIBS		=	`pkg-config --libs pappl` `pkg-config --libs cups`
 OPTIM		=	-Os -g
 # Uncomment the following line to enable experimental PCL 6 support
 #OPTIONS	=	-DWITH_PCL6=1
@@ -108,17 +108,18 @@ macos:
 	echo "Creating macOS app bundle..."
 	rm -rf /private/tmp/hp-printer-app-$(VERSION)
 	make DESTDIR="/private/tmp/hp-printer-app-$(VERSION)" install
-	mkdir -p "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app/Contents/MacOS"
-	mv "/private/tmp/hp-printer-app-$(VERSION)/usr/local/bin/hp-printer-app" "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app/Contents/MacOS"
-	mkdir -p "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app/Contents/Resources"
-	cp hp-printer-app.icns "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app/Contents/Resources"
-	sed -e '1,$$s/@VERSION@/$(VERSION)/' <hp-printer-app.plist.in >"/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app/Contents/Info.plist"
-	ln -s "/Applications/HP Printer App.app/Contents/MacOS/hp-printer-app" "/private/tmp/hp-printer-app-$(VERSION)/usr/local/bin/hp-printer-app"
+	mkdir -p "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/MacOS"
+	mv "/private/tmp/hp-printer-app-$(VERSION)/usr/local/bin/hp-printer-app" "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/MacOS"
+	mkdir -p "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/Resources"
+	cp hp-printer-app.icns "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/Resources"
+	sed -e '1,$$s/@VERSION@/$(VERSION)/' <hp-printer-app.plist.in >"/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/Info.plist"
+	ln -s "/Applications/HP Printer Application.app/Contents/MacOS/hp-printer-app" "/private/tmp/hp-printer-app-$(VERSION)/usr/local/bin/hp-printer-app"
+	mkdir -p "/private/tmp/hp-printer-app-$(VERSION)/usr/local/etc/cups/ssl"
 	echo "Signing macOS app bundle..."
-	codesign $(CSFLAGS) --entitlements hp-printer-app.entitlements "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app"
+	codesign $(CSFLAGS) --entitlements hp-printer-app.entitlements "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app"
 	echo "Creating archive for notarization..."
 	rm -f hp-printer-app.zip
-	ditto -c -k --keepParent "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer App.app" hp-printer-app.zip
+	ditto -c -k --keepParent "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app" hp-printer-app.zip
 	echo Notarizing application
 	xcrun notarytool submit hp-printer-app.zip \
 	    --apple-id "$${APPLEID}" \
