@@ -14,7 +14,6 @@ icon: hp-printer-app.png
 
 architectures:
   - build-on: [ arm64, armhf, amd64 ]
-    run-on: [ arm64, armhf, amd64 ]
 
 apps:
     hp-printer-app:
