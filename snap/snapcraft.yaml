@@ -12,6 +12,11 @@ grade: stable
 confinement: strict
 icon: hp-printer-app.png
 
+architectures:
+  - build-on: amd64
+  - build-on: arm64
+  - build-on: armhf
+
 apps:
     hp-printer-app:
         command: usr/local/bin/hp-printer-app
