@@ -93,7 +93,7 @@ decode-pcl6:	decode-pcl6.o
 
 $(OBJS):	icons.h Makefile
 
-icons.h:	$(ICONS)
+makeicons:
 	echo "Generating $@..."
 	pappl-makeresheader $(ICONS) >icons.h
 
