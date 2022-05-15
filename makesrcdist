@@ -15,5 +15,5 @@ git tag -m "Tag $version" v$version
 git push origin v$version
 
 echo Creating hp-printer-app-$version.tar.gz...
-git archive --format tar --prefix=hp-printer-app-$version/ HEAD | gzip -v9 >hp-printer-app-$version.tar.gz
+git archive -o hp-printer-app-$version.tar.gz --prefix=hp-printer-app-$version/ HEAD
 gpg --detach-sign hp-printer-app-$version.tar.gz
