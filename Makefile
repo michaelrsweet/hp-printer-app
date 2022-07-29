@@ -27,7 +27,7 @@ unitdir 	=	`pkg-config --variable=systemdsystemunitdir systemd`
 CSFLAGS		=	-s "$${CODESIGN_IDENTITY:=-}" --timestamp -o runtime
 CFLAGS		=	$(CPPFLAGS) $(OPTIM)
 CPPFLAGS	=	'-DVERSION="$(VERSION)"' `pkg-config --cflags cups` `pkg-config --cflags pappl` $(OPTIONS)
-LDFLAGS		=	$(OPTIM) `cups-config --ldflags`
+LDFLAGS		=	$(OPTIM) `pkg-config --libs cups`
 LIBS		=	`pkg-config --libs pappl` `pkg-config --libs cups`
 OPTIM		=	-Os -g
 # Uncomment the following line to enable experimental PCL 6 support
