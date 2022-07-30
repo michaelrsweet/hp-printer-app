@@ -236,7 +236,7 @@ You can set the default values for each option with the "add" or "modify"
 sub-commands:
 
     hp-printer-app add -d PRINTER -v DEVICE-URI -m DRIVER-NAME -o OPTION=VALUE ...
-    hp-printer-app modify -D PRINTER -o OPTION=VALUE ...
+    hp-printer-app modify -d PRINTER -o OPTION=VALUE ...
 
 In addition, you can configure the installed media and other printer settings
 using other "-o" options.  For example, the following command configures the
@@ -287,7 +287,7 @@ operations, you set the PAM authentication service with the
 `-o auth-service=SERVICE` option.  For example, to use the "cups" PAM service
 with `hp-printer-app`, run:
 
-    hp-printer-app -o server-name=HOSTNAME -o server-port=NNN -o auth-service=cups
+    hp-printer-app server -o server-name=HOSTNAME -o server-port=NNN -o auth-service=cups
 
 By default, any user can authenticate web interface operations.  To restrict
 access to a particular UNIX group, use the `-o admin-group=GROUP` option as
