@@ -42,7 +42,7 @@ parts:
     hp-printer-app:
         plugin: make
         source: .
-        make-parameters: prefix=
+        make-parameters: [prefix=]
         after: [pappl]
 
     hooks:
