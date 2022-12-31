@@ -6,7 +6,7 @@
 .\" Licensed under Apache License v2.0.  See the file "LICENSE" for more
 .\" information.
 .\"
-.TH hp-printer-app 1 "hp-printer-app" "2022-04-24" "Michael R Sweet"
+.TH hp-printer-app 1 "hp-printer-app" "2022-12-31" "Michael R Sweet"
 .SH NAME
 hp-printer-app \- hp printer application
 .SH SYNOPSIS
@@ -186,6 +186,59 @@ Specifies an "ipp:" or "ipps:" printer/server.
 .TP 5
 \fB\-v \fIDEVICE-URI\fR
 Specifies a "socket:" or "usb:" device ("add" sub-command).
+.SH SERVER OPTIONS
+The following options are recognized by the "server" sub-command:
+.TP 5
+\fB\-o admin-group=\fIGROUP-NAME\fR
+Specifies the administrative group name when using PAM for authentication.
+.TP 5
+\fB\-o auth-server=\fIPAM-SERVICE\fR
+Specifies the PAM service to use for authentication.
+.TP 5
+\fB\-o listen-hostname=\fIHOSTNAME\fR
+.TP 5
+\fB\-o listen-hostname=*\fR
+Specifies the listen hostname for incoming connections.
+The "*" name specifies the wildcard listener for any network interface and is the default.
+.TP 5
+\fB\-o log-file=\fIFILENAME\fR
+.TP 5
+\fB\-o log-file=-\fR
+.TP 5
+\fB\-o log-file=syslog\fR
+Specifies the log file.
+The name "-" sends log messages to the standard error, while "syslog" sends log messages to the local logging service.
+.TP 5
+\fB\-o log-level=fatal\fR
+.TP 5
+\fB\-o log-level=error\fR
+.TP 5
+\fB\-o log-level=warn\fR
+.TP 5
+\fB\-o log-level=info\fR
+.TP 5
+\fB\-o log-level=debug\fR
+Specifies the level of verbosity in the log file.
+The value "fatal" specifies log messages that cause the server to abort, while the value "debug" specifies the highest level of verbosity.
+.TP 5
+\fB\-o server-hostname=\fIHOSTNAME\fR
+Specifies the network hostname that is advertised for the server.
+The default is the value reported by the
+.BR hostname (1)
+command.
+.TP 5
+\fB\-o server-name=\fIDNS-SD-NAME\fR
+Specifies the DNS-SD service name that is advertised for the server.
+The default is "hp-printer-app".
+.TP 5
+\fB\-o server-options=\fIOPTION[,OPTION,...]\fR
+.TP 5
+\fB\-o server-port=\fIPORT\fR
+Specifies the port number that is used.
+The default is in the range of 8000 to 8999.
+.TP 5
+\fB\-o spool-directory=\fIDIRECTORY\fR
+Specifies the spool directory for print jobs.
 .SH EXAMPLES
 Add a PCL laser printer "laser" at IP address 11.22.33.44:
 
