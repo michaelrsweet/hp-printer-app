@@ -117,6 +117,8 @@ macos:
 	mkdir -p "/private/tmp/hp-printer-app-$(VERSION)/usr/local/etc/cups/ssl"
 	echo "Signing macOS app bundle..."
 	codesign $(CSFLAGS) --entitlements hp-printer-app.entitlements "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app"
+	mkdir -p "/private/tmp/hp-printer-app-$(VERSION)/Library/LaunchDaemons"
+	cp org.msweet.hp-printer-app.plist "/private/tmp/hp-printer-app-$(VERSION)/Library/LaunchDaemons"
 	echo "Creating archive for notarization..."
 	rm -f hp-printer-app.zip
 	ditto -c -k --keepParent "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app" hp-printer-app.zip

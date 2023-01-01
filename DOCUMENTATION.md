@@ -58,7 +58,10 @@ Installation
 `hp-printer-app` is published as a snap for Linux.  Run the following command to
 install it:
 
+    sudo snap install core         (if you haven't already done so)
     sudo snap install hp-printer-app
+    sudo snap connect hp-printer-app:raw-usb
+    sudo snap start hp-printer-app.hp-printer-app-server
 
 A package file is included with all source releases on Github for use on macOS
 10.14 and higher for both Intel and Apple Silicon.
