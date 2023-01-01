@@ -189,55 +189,93 @@ Specifies a "socket:" or "usb:" device ("add" sub-command).
 .SH SERVER OPTIONS
 The following options are recognized by the "server" sub-command:
 .TP 5
-\fB\-o admin-group=\fIGROUP-NAME\fR
+\fB\-o admin\-group=\fIGROUP-NAME\fR
 Specifies the administrative group name when using PAM for authentication.
 .TP 5
-\fB\-o auth-server=\fIPAM-SERVICE\fR
+\fB\-o auth\-server=\fIPAM-SERVICE\fR
 Specifies the PAM service to use for authentication.
 .TP 5
-\fB\-o listen-hostname=\fIHOSTNAME\fR
+\fB\-o listen\-hostname=\fIHOSTNAME\fR
 .TP 5
-\fB\-o listen-hostname=*\fR
+\fB\-o listen\-hostname=*\fR
 Specifies the listen hostname for incoming connections.
 The "*" name specifies the wildcard listener for any network interface and is the default.
 .TP 5
-\fB\-o log-file=\fIFILENAME\fR
+\fB\-o log\-file=\fIFILENAME\fR
 .TP 5
-\fB\-o log-file=-\fR
+\fB\-o log\-file=-\fR
 .TP 5
-\fB\-o log-file=syslog\fR
+\fB\-o log\-file=syslog\fR
 Specifies the log file.
 The name "-" sends log messages to the standard error, while "syslog" sends log messages to the local logging service.
 .TP 5
-\fB\-o log-level=fatal\fR
+\fB\-o log\-level=fatal\fR
 .TP 5
-\fB\-o log-level=error\fR
+\fB\-o log\-level=error\fR
 .TP 5
-\fB\-o log-level=warn\fR
+\fB\-o log\-level=warn\fR
 .TP 5
-\fB\-o log-level=info\fR
+\fB\-o log\-level=info\fR
 .TP 5
-\fB\-o log-level=debug\fR
+\fB\-o log\-level=debug\fR
 Specifies the level of verbosity in the log file.
 The value "fatal" specifies log messages that cause the server to abort, while the value "debug" specifies the highest level of verbosity.
 .TP 5
-\fB\-o server-hostname=\fIHOSTNAME\fR
+\fB\-o server\-hostname=\fIHOSTNAME\fR
 Specifies the network hostname that is advertised for the server.
 The default is the value reported by the
 .BR hostname (1)
 command.
 .TP 5
-\fB\-o server-name=\fIDNS-SD-NAME\fR
+\fB\-o server\-name=\fIDNS-SD-NAME\fR
 Specifies the DNS-SD service name that is advertised for the server.
 The default is "hp-printer-app".
 .TP 5
-\fB\-o server-options=\fIOPTION[,OPTION,...]\fR
+\fB\-o server\-options=\fIOPTION[,OPTION,...]\fR
+Specifies a comma-delimited list of server options.
+By default,
+.B hp-printer-app
+uses the "multi-queue" and "web-interface" options.
+The following options are supported:
+.TP 10
+.B dnssd\-host
+When resolving conflicts, add the DNS-SD hostname instead of a serial number or UUID.
+.TP 10
+.B no\-multi\-queue
+Do no support multiple print queues.
+.TP 10
+.B raw\-socket
+Provide a raw ("JetDirect") socket for each printer on port 91xx.
+.TP 10
+.B usb\-printer
+Enable a USB printer gadget for the default printer (Linux only for Raspberry Pi and similar embedded SBCs).
+.TP 10
+.B no\-web\-interface
+Disables the web interface.
+.TP 10
+.B web\-log
+Enables the log file web page.
+.TP 10
+.B web\-network
+Enables the network settings web page.
+.TP 10
+.B web\-remote
+Enables remote queue management.
+.TP 10
+.B web\-security
+Enables the user/password settings web page.
+.TP 10
+.B web\-tls
+Enables the TLS settings web page.
+.TP 10
+.B no\-tls
+Disables TLS support.
 .TP 5
-\fB\-o server-port=\fIPORT\fR
+\fB\-o server\-port=\fIPORT\fR
 Specifies the port number that is used.
 The default is in the range of 8000 to 8999.
 .TP 5
-\fB\-o spool-directory=\fIDIRECTORY\fR
+\fB\-o spool\-directory=\fIDIRECTORY\fR
 Specifies the spool directory for print jobs.
 .SH EXAMPLES
 Add a PCL laser printer "laser" at IP address 11.22.33.44:

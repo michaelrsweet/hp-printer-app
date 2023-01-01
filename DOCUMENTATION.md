@@ -1,7 +1,7 @@
 HP Printer Application Documentation
 ====================================
 
-HP Printer Application v1.2.0
+HP Printer Application v1.2.1
 Copyright 2019-2022 by Michael R Sweet
 
 `hp-printer-app` is licensed under the Apache License Version 2.0.  See the
@@ -255,26 +255,42 @@ Running a Server
 The "server" sub-command runs a standalone spooler.  The following options
 control the server operation:
 
+- "-o admin-group=GROUP": Specifies a group to use for remote authentication.
+- "-o auth-service=SERVICE": Specifies a PAM service for remote authentication.
 - "-o listen-hostname=HOSTNAME": Sets the network hostname to resolve for listen
   addresses - use "*" for the wildcard addresses.
-- "-o server-hostname=HOSTNAME": Sets the network hostname to advertise.
-- "-o server-name=DNS-SD-NAME": Sets the DNS-SD name to advertise.
-- "-o server-port=NNN": Sets the network port number; the default is randomly
-  assigned.
-- "-o auth-service=SERVICE": Specifies a PAM service for remote authentication.
-- "-o admin-group=GROUP": Specifies a group to use for remote authentication.
-- "-o spool-directory=DIRECTORY": Specifies the directory to store print files.
 - "-o log-file=FILENAME": Specifies a log file.
 - "-o log-file=-": Specifies that log entries are written to the standard error.
 - "-o log-file=syslog": Specifies that log entries are sent to the system log.
 - "-o log-level=LEVEL": Specifies the log level - "debug", "info", "warn",
   "error", or "fatal".
+- "-o server-hostname=HOSTNAME": Sets the network hostname to advertise.
+- "-o server-name=DNS-SD-NAME": Sets the DNS-SD name to advertise.
+- "-o server-options=OPTION[,...,OPTION]": Sets server options:
+  - 'none': No options
+  - 'dnssd-host': Use the hostname in printer DNS-SD names
+  - 'no-multi-queue': Don't allow multiple queues
+  - 'raw-socket': Enable raw socket (JetDirect) support for all printers
+  - 'usb-printer': Enable the IPP-USB gadget for the default printer
+  - 'no-web-interface': Disable the web interface
+  - 'web-log': Enable web access of the log
+  - 'web-network': Enable web-based network configuration
+  - 'web-remote': Enable remote access for the web interface
+  - 'web-security': Enable web-based security configuration
+  - 'no-tls': Disable TLS (encryption) support
+- "-o server-port=NNN": Sets the network port number; the default is randomly
+  assigned.
+- "-o spool-directory=DIRECTORY": Specifies the directory to store print files.
 
-> *Note:* When you install the `hp-printer-app` snap on Linux, the server is
-> automatically run as root.  On macOS, running the "HP Printer App" application
-> starts the server.  When you install from source, a `systemd` service file is
-> installed but not activated - it can be used to automatically start
-> `hp-printer-app` when the system boots.
+When using the snap you can set these options using the `snap set` command, for
+example:
+
+    sudo snap set hp-printer-app auth-service=other
+
+> *Note:* When you install the `hp-printer-app` snap on Linux or the package on
+> macOS, the server is automatically run as root.  When you install from source,
+> a `systemd` service file is installed but not activated - it can be used to
+> automatically start `hp-printer-app` when the system boots.
 
 
 Server Web Interface

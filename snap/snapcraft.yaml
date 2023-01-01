@@ -47,14 +47,14 @@ parts:
 
     hooks:
         plugin: dump
-        source: snap/hooks
+        source: snap/local/hooks
         organize:
-          hp-printer-app-server: snap/hooks/
+          configure: snap/hooks/
         after: [hp-printer-app]
 
     scripts:
         plugin: dump
-        source: snap/scripts
+        source: snap/local/scripts
         organize:
           hp-printer-app-server: bin/
         after: [hp-printer-app]
