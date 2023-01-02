@@ -38,9 +38,13 @@ Installing
 ----------
 
 `hp-printer-app` is published as a snap for Linux.  Run the following command
-to install it:
+to install it and start the server:
 
+    sudo snap install core         (if you haven't already done so)
+    sudo snap install avahi        (some Debian-based distros)
     sudo snap install hp-printer-app
+    sudo snap connect hp-printer-app:raw-usb
+    sudo snap start hp-printer-app.hp-printer-app-server
 
 A package file is included with all source releases on Github for use on macOS
 10.14 and higher for both Intel and Apple Silicon.
@@ -93,8 +97,8 @@ specify a printer and "-o" to specify a named option with a value, for example:
 
 - `hp-printer-app -d myprinter somefile.pcl`: Print a file to the printer named
   "myprinter".
-- `hp-printer-app -o media=na_letter_8.5x11in picture.jpg`: Print a picture to a US
-  letter sheet.
+- `hp-printer-app -o media=na_letter_8.5x11in picture.jpg`: Print a picture to a
+  US letter sheet.
 - `hp-printer-app default -d myprinter`: Set "myprinter" as the default printer.
 
 See the `hp-printer-app` man page for more examples.
@@ -143,7 +147,7 @@ System Service v1.0 for managing the print queues and default printer.
 Legal Stuff
 -----------
 
-The HP Printer Application is Copyright © 2019-2022 by Michael R Sweet.
+The HP Printer Application is Copyright © 2019-2023 by Michael R Sweet.
 
 This software is licensed under the Apache License Version 2.0.  See the files
 "LICENSE" and "NOTICE" for more information.

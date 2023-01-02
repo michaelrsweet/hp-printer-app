@@ -2,7 +2,7 @@ HP Printer Application Documentation
 ====================================
 
 HP Printer Application v1.2.1
-Copyright 2019-2022 by Michael R Sweet
+Copyright 2019-2023 by Michael R Sweet
 
 `hp-printer-app` is licensed under the Apache License Version 2.0.  See the
 files "LICENSE" and "NOTICE" for more information.
@@ -56,9 +56,10 @@ Installation
 ------------
 
 `hp-printer-app` is published as a snap for Linux.  Run the following command to
-install it:
+install it and start the server:
 
     sudo snap install core         (if you haven't already done so)
+    sudo snap install avahi        (some Debian-based distros)
     sudo snap install hp-printer-app
     sudo snap connect hp-printer-app:raw-usb
     sudo snap start hp-printer-app.hp-printer-app-server
@@ -282,7 +283,7 @@ control the server operation:
   - 'web-security': Enable web-based security configuration
   - 'no-tls': Disable TLS (encryption) support
 - "-o server-port=NNN": Sets the network port number; the default is randomly
-  assigned.
+  assigned starting at 8000.
 - "-o spool-directory=DIRECTORY": Specifies the directory to store print files.
 
 When using the snap you can set these options using the `snap set` command, for
