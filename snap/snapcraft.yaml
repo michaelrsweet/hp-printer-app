@@ -41,7 +41,7 @@ parts:
 
     pappl:
         plugin: autotools
-        autotools-configure-parameters: [--disable-shared,--enable-libjpeg,--enable-libpng,--enable-libusb,--prefix=/,--with-dnssd=avahi]
+        autotools-configure-parameters: [--disable-shared,--enable-libjpeg,--enable-libpng,--enable-libusb,--prefix=/usr,-sysconfdir=/etc,--with-dnssd=avahi]
         source: https://github.com/michaelrsweet/pappl/releases/download/v1.3.1/pappl-1.3.1.tar.gz
         build-packages: [libavahi-client-dev, libgnutls28-dev, libjpeg8-dev, libpam-dev, libpng-dev, libusb-1.0-0-dev, zlib1g-dev]
         stage-packages: [libavahi-client3, libjpeg8, libpng16-16, libusb-1.0-0]
