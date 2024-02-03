@@ -147,7 +147,7 @@ System Service v1.0 for managing the print queues and default printer.
 Legal Stuff
 -----------
 
-The HP Printer Application is Copyright © 2019-2023 by Michael R Sweet.
+The HP Printer Application is Copyright © 2019-2024 by Michael R Sweet.
 
 This software is licensed under the Apache License Version 2.0.  See the files
 "LICENSE" and "NOTICE" for more information.

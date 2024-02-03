@@ -1,7 +1,7 @@
 HP Printer Application Documentation
 ====================================
 
-HP Printer Application v1.2.1
+HP Printer Application v1.2.2
 Copyright 2019-2023 by Michael R Sweet
 
 `hp-printer-app` is licensed under the Apache License Version 2.0.  See the
@@ -59,13 +59,14 @@ Installation
 install it and start the server:
 
     sudo snap install core         (if you haven't already done so)
-    sudo snap install avahi        (some Debian-based distros)
+    sudo snap install avahi
     sudo snap install hp-printer-app
     sudo snap connect hp-printer-app:raw-usb
+    sudo snap connect hp-printer-app:avahi-control avahi:avahi-control
     sudo snap start hp-printer-app.hp-printer-app-server
 
 A package file is included with all source releases on Github for use on macOS
-10.14 and higher for both Intel and Apple Silicon.
+11 and higher for both Intel and Apple Silicon.
 
 If you need to install `hp-printer-app` from source, you'll need a "make"
 program, a C99 compiler (Clang and GCC work), the CUPS developer files, and the
@@ -290,6 +291,35 @@ When using the snap you can set these options using the `snap set` command, for
 example:
 
     sudo snap set hp-printer-app auth-service=other
+
+When using the hp-printer-app package for macOS, you can set these options by
+creating the "/Library/Application Support/hp-printer-app.conf" file and listing
+the options one per line, for example:
+
+    sudo vi "/Library/Application Support/hp-printer-app.conf"
+    i
+    auth-service=other
+    listen-hostname=localhost
+    :wq
+
+Other operating systems will look for the "hp-printer-app.conf" file in the
+"/etc" and "/usr/local/etc" directories.
+
+After changing these options you'll need to restart the server.  On macOS the
+`launchctl` command is used:
+
+    sudo launchctl stop org.msweet.hp-printer-app
+    sudo launchctl start org.msweet.hp-printer-app
+
+Similarly, on Linux the `systemctl` command is used:
+
+    sudo systemctl restart hp-printer-app.service
+
+If you've run the server by hand, just use the "shutdown" sub-command and then
+run the server again:
+
+    sudo hp-printer-app shutdown
+    sudo hp-printer-app server
 
 > *Note:* When you install the `hp-printer-app` snap on Linux or the package on
 > macOS, the server is automatically run as root.  When you install from source,
