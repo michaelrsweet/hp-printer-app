@@ -1,7 +1,7 @@
 //
 // Program to decode a PCL 6/PCL-XL data stream.
 //
-// Copyright © 2022 by Michael R Sweet
+// Copyright © 2022-2024 by Michael R Sweet
 //
 // Licensed under Apache License v2.0.  See the file "LICENSE" for more
 // information.
@@ -129,10 +129,8 @@ main(int  argc,				// I - Number of command-line arguments
   struct stat	finfo;			// File information
   long		pos;			// File position
   int		ch;			// Current character
-  char		line[1024];		// Line from file
   enum pcl6_enc	encoding;		// Value encoding
   enum pcl6_attr attr;			// Current attribute
-  enum pcl6_cmd	cmd;			// Current command
   unsigned	number,			// Current number value
 		xy[2],			// Current X,Y value
 		length = 0;		// Current block length

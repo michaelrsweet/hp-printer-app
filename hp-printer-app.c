@@ -1,7 +1,7 @@
 //
 // HP-Printer app for the Printer Application Framework
 //
-// Copyright © 2020-2022 by Michael R Sweet.
+// Copyright © 2020-2024 by Michael R Sweet.
 //
 // Licensed under Apache License v2.0.  See the file "LICENSE" for more
 // information.
@@ -387,7 +387,6 @@ static bool	pcl_rendpage(pappl_job_t *job, pappl_pr_options_t *options, pappl_de
 static bool	pcl_rstartjob(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device);
 static bool	pcl_rstartpage(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device, unsigned page);
 static bool	pcl_rwriteline(pappl_job_t *job, pappl_pr_options_t *options, pappl_device_t *device, unsigned y, const unsigned char *pixels);
-static void	pcl_setup(pappl_system_t *system);
 static bool	pcl_status(pappl_printer_t *printer);
 static bool	pcl_update_status(pappl_printer_t *printer, pappl_device_t *device);
 #if WITH_PCL6
@@ -1207,8 +1206,7 @@ pcl_rstartpage(
     unsigned           page)		// I - Page number
 {
   size_t	i;			// Looping var
-  unsigned	plane,			// Looping var
-		length;			// Bytes to write
+  unsigned	plane;			// Looping var
   cups_page_header_t *header = &(options->header);
 					// Page header
   pcl_t		*pcl = (pcl_t *)papplJobGetData(job);
@@ -1807,7 +1805,6 @@ pcl_update_status(
 {
   int			num_supply;	// Number of supplies
   pappl_supply_t	supply[32];	// Printer supply information
-  pappl_preason_t	reasons;	// Printer state reasons
 
 
   if ((num_supply = papplDeviceGetSupplies(device, (int)(sizeof(supply) / sizeof(supply[0])), supply)) > 0)
