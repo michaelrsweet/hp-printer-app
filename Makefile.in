@@ -1,7 +1,7 @@
 #
 # Makefile for the HP Printer Application
 #
-# Copyright © 2020-2022 by Michael R Sweet
+# Copyright © 2020-2024 by Michael R Sweet
 #
 # Licensed under Apache License v2.0.  See the file "LICENSE" for more
 # information.
@@ -10,28 +10,53 @@
 # POSIX makefile
 .POSIX:
 
+
 # Build silently
 .SILENT:
 
-# Version and directories...
-VERSION		=	1.2
-prefix		=	$(DESTDIR)/usr/local
-includedir	=	$(prefix)/include
-bindir		=	$(prefix)/bin
-libdir		=	$(prefix)/lib
-mandir		=	$(prefix)/share/man
-unitdir 	=	`pkg-config --variable=systemdsystemunitdir systemd`
+
+# Version number...
+VERSION		=	@VERSION@
+
+# Programs and options...
+ASAN_OPTIONS	=	leak_check_at_exit=false
+CC		=	@CC@
+CFLAGS		=	-I.. @CFLAGS@ $(CPPFLAGS) $(OPTIM) $(WARNINGS)
+CPPFLAGS	=	@CPPFLAGS@
+CSFLAGS		=	-s "$${CODESIGN_IDENTITY:=-}" --timestamp @CSFLAGS@
+INSTALL		=	@INSTALL@
+LDFLAGS		=	@LDFLAGS@ $(OPTIM)
+LIBS		=	@LIBS@ -lm
+MKDIR		=	@MKDIR@ -p
+OPTIM		=	@OPTIM@
+RM		=	@RM@ -f
+RMDIR		=	@RMDIR@
+SHELL		=	/bin/sh
+WARNINGS	=	@WARNINGS@
 
 
-# Compiler/linker options...
-CSFLAGS		=	-s "$${CODESIGN_IDENTITY:=-}" --timestamp -o runtime
-CFLAGS		=	$(CPPFLAGS) $(OPTIM)
-CPPFLAGS	=	'-DVERSION="$(VERSION)"' `pkg-config --cflags cups` `pkg-config --cflags pappl` $(OPTIONS)
-LDFLAGS		=	$(OPTIM)
-LIBS		=	`pkg-config --libs pappl` `pkg-config --libs cups` -lm
-OPTIM		=	-Os -g
-# Uncomment the following line to enable experimental PCL 6 support
-#OPTIONS	=	-DWITH_PCL6=1
+# Directories...
+bindir		=	@bindir@
+datadir		=	@datadir@
+datarootdir	=	@datarootdir@
+exec_prefix	=	@exec_prefix@
+includedir	=	@includedir@
+infodir		=	@infodir@
+libdir		=	@libdir@
+libexecdir	=	@libexecdir@
+localstatedir	=	@localstatedir@
+mandir		=	@mandir@
+oldincludedir	=	@oldincludedir@
+prefix		=	@prefix@
+privateinclude	=	@privateinclude@
+sbindir		=	@sbindir@
+sharedstatedir	=	@sharedstatedir@
+srcdir		=	@srcdir@
+sysconfdir	=	@sysconfdir@
+top_srcdir	=	@top_srcdir@
+unitdir		=	@unitdir@
+
+BUILDROOT	=	$(DSTROOT)$(RPM_BUILD_ROOT)$(DESTDIR)
 
 
 # Resources...
@@ -72,24 +97,37 @@ clean:
 
 install:	$(TARGETS)
 	echo "Installing program to $(bindir)..."
-	mkdir -p $(bindir)
-	cp hp-printer-app $(bindir)
+	$(INSTALL) -d -m 755 $(BUILDROOT)$(bindir)
+	$(INSTALL) -c -m 755 hp-printer-app $(BUILDROOT)$(bindir)
 	echo "Installing documentation to $(mandir)..."
-	mkdir -p $(mandir)/man1
+	$(INSTALL) -d -m 755 $(BUILDROOT)$(mandir)/man1
+	$(INSTALL) -c -m 644 hp-printer-app.1 $(BUILDROOT)$(mandir)/man1
 	cp hp-printer-app.1 $(mandir)/man1
-	if pkg-config --exists systemd; then \
-		echo "Installing systemd service to $(unitdir)..."; \
-		mkdir -p $(unitdir); \
-		cp hp-printer-app.service $(unitdir); \
+	if test `uname` = Darwin; then \
+	    echo "Installing launchd service to $(BUILDROOT)/Library/LaunchDaemons..."; \
+	    $(INSTALL) -d -m 755 $(BUILDROOT)/Library/LaunchDaemons; \
+	    $(INSTALL) -c -m 644 org.msweet.hp-printer-app.plist $(BUILDROOT)/Library/LaunchDaemons; \
+	elif test "x$(unitdir)" != x; then \
+	    echo "Installing systemd service to $(BUILDROOT)$(unitdir)..."; \
+	    $(INSTALL) -d -m 755 $(BUILDROOT)$(unitdir); \
+	    $(INSTALL) -c -m 644 hp-printer-app.service $(BUILDROOT)$(unitdir); \
 	fi
 
 hp-printer-app:	hp-printer-app.o
 	echo "Linking $@..."
 	$(CC) $(LDFLAGS) -o $@ hp-printer-app.o $(LIBS)
+	if test `uname` = Darwin; then \
+	    echo "Code-signing $@..."; \
+	    codesign $(CSFLAGS) --prefix org.msweet $@; \
+	fi
 
 decode-pcl6:	decode-pcl6.o
 	echo "Linking $@..."
 	$(CC) $(LDFLAGS) -o $@ decode-pcl6.o
+	if test `uname` = Darwin; then \
+	    echo "Code-signing $@..."; \
+	    codesign $(CSFLAGS) --prefix org.msweet $@; \
+	fi
 
 $(OBJS):	icons.h Makefile
 
@@ -108,17 +146,17 @@ macos:
 	echo "Creating macOS app bundle..."
 	rm -rf /private/tmp/hp-printer-app-$(VERSION)
 	make DESTDIR="/private/tmp/hp-printer-app-$(VERSION)" install
-	mkdir -p "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/MacOS"
-	mv "/private/tmp/hp-printer-app-$(VERSION)/usr/local/bin/hp-printer-app" "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/MacOS"
-	mkdir -p "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/Resources"
-	cp hp-printer-app.icns "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/Resources"
-	sed -e '1,$$s/@VERSION@/$(VERSION)/' <hp-printer-app.plist.in >"/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/Info.plist"
-	ln -s "/Applications/HP Printer Application.app/Contents/MacOS/hp-printer-app" "/private/tmp/hp-printer-app-$(VERSION)/usr/local/bin/hp-printer-app"
-	mkdir -p "/private/tmp/hp-printer-app-$(VERSION)/usr/local/etc/cups/ssl"
+	$(INSTALL) -d "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/MacOS"
+	mv "/private/tmp/hp-printer-app-$(VERSION)$(bindir)/hp-printer-app" "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/MacOS"
+	$(INSTALL) -d "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/Resources"
+	$(INSTALL) -c hp-printer-app.icns "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/Resources"
+	$(INSTALL) -c hp-printer-app.plist "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/Info.plist"
+	ln -s "/Applications/HP Printer Application.app/Contents/MacOS/hp-printer-app" "/private/tmp/hp-printer-app-$(VERSION)$(bindir)/hp-printer-app"
+	$(INSTALL) -d "/private/tmp/hp-printer-app-$(VERSION)/Library/Application Support/cups/ssl"
 	echo "Signing macOS app bundle..."
-	codesign $(CSFLAGS) --entitlements hp-printer-app.entitlements "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app"
-	mkdir -p "/private/tmp/hp-printer-app-$(VERSION)/Library/LaunchDaemons"
-	cp org.msweet.hp-printer-app.plist "/private/tmp/hp-printer-app-$(VERSION)/Library/LaunchDaemons"
+	codesign $(CSFLAGS) -f --entitlements hp-printer-app.entitlements "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app"
+	$(INSTALL) -d  "/private/tmp/hp-printer-app-$(VERSION)/Library/LaunchDaemons"
+	$(INSTALL) -c org.msweet.hp-printer-app.plist "/private/tmp/hp-printer-app-$(VERSION)/Library/LaunchDaemons"
 	echo "Creating archive for notarization..."
 	rm -f hp-printer-app.zip
 	ditto -c -k --keepParent "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app" hp-printer-app.zip
@@ -133,6 +171,6 @@ macos:
 	pkgbuild --root /private/tmp/hp-printer-app-$(VERSION) \
 	    --identifier org.msweet.hp-printer-app \
 	    --version $(VERSION) \
-	    --min-os-version 10.14 \
+	    --min-os-version 11.0 \
 	    --sign "$${PKGSIGN_IDENTITY}" --timestamp \
 	    hp-printer-app-$(VERSION)-macos.pkg

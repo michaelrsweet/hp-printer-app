@@ -1,18 +1,13 @@
 Changes in HP Printer Application
 =================================
 
-v1.2.2 - Month DD, YYYY
+v1.3.0 - Month DD, YYYY
 -----------------------
 
 - Switched to using a configure script.
 - Updated documentation for current PAPPL.
-
-
-v1.2.1 - January 2, 2023
-------------------------
-
 - Added support for snap server configuration settings (Issue #21)
-- Updated macOS and Linux binaries to use PAPPL 1.3.1.
+- Updated macOS and Linux binaries to use PAPPL 1.4.x.
 
 
 v1.2.0 - May 15, 2022

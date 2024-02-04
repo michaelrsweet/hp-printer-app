@@ -411,7 +411,7 @@ main(int  argc,				// I - Number of command-line arguments
 {
   return (papplMainloop(argc, argv,
                         VERSION,
-                        "Copyright &copy; 2020-2022 by Michael R Sweet. Provided under the terms of the <a href=\"https://www.apache.org/licenses/LICENSE-2.0\">Apache License 2.0</a>.",
+                        "Copyright &copy; 2020-2024 by Michael R Sweet. Provided under the terms of the <a href=\"https://www.apache.org/licenses/LICENSE-2.0\">Apache License 2.0</a>.",
                         (int)(sizeof(pcl_drivers) / sizeof(pcl_drivers[0])),
                         pcl_drivers, pcl_autoadd, pcl_callback,
                         /*subcmd_name*/NULL, /*subcmd_cb*/NULL,

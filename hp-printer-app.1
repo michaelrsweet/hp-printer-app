@@ -1,12 +1,12 @@
 .\"
 .\" HP Printer Application man page
 .\"
-.\" Copyright © 2020-2022 by Michael R Sweet
+.\" Copyright © 2020-2024 by Michael R Sweet
 .\"
 .\" Licensed under Apache License v2.0.  See the file "LICENSE" for more
 .\" information.
 .\"
-.TH hp-printer-app 1 "hp-printer-app" "2022-12-31" "Michael R Sweet"
+.TH hp-printer-app 1 "hp-printer-app" "2024-02-03" "Michael R Sweet"
 .SH NAME
 hp-printer-app \- hp printer application
 .SH SYNOPSIS
@@ -326,7 +326,27 @@ List network and USB printers that can be added:
 hp-printer-app devices
 .fi
 
+.SH CONFIGURATION FILES
+.B hp-printer-app
+will look for configuration files in the following locations:
+.IP \(bu 1
+$HOME/.config/hp-printer-app.conf
+.IP \(bu 1
+$HOME/Library/Application Support/hp-printer-app.conf
+.IP \(bu 1
+$SNAP_COMMON/hp-printer-app.conf
+.IP \(bu 1
+%USERPROFILE%/AppData/Local/hp-printer-app.conf
+.IP \(bu 1
+/Library/Application Support/hp-printer-app.conf
+.IP \(bu 1
+/etc/hp-printer-app.conf
+.IP \(bu 1
+/usr/local/etc/hp-printer-app.conf
+.PP
+Each file consists of comment lines starting with the '#' character and option lines of the form "NAME=VALUE ... NAME=VALUE".
+
 .SH SEE ALSO
 https://www.msweet.org/hp-printer-app
 .SH COPYRIGHT
-Copyright \[co] 2019-2022 by Michael R Sweet.
+Copyright \[co] 2019-2024 by Michael R Sweet.

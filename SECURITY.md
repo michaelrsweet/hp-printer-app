@@ -4,10 +4,24 @@ Security Policy
 This file describes how security issues are reported and handled, and what the
 expectations are for security issues reported to this project.
 
-> Note: As there are currently no stable releases of PAPPL, any security fixes
-> to the PAPPL software will be pushed to the Github repository as soon as a
-> fix is available.  Once there *is* a stable release, the usual responsible
-> disclosure policies will apply.
+
+Reporting a Security Bug
+------------------------
+
+For the purposes of this project, a security bug is a software defect that
+allows a *local or remote user* to gain unauthorized access or privileges on the
+host computer or to cause the software to crash.  Such defects should be
+reported to the project security advisory page at
+<https://github.com/michaelrsweet/hp-printer-app/security/advisories>.
+
+Alternately, security bugs can be reported to "security AT msweet.org" using the
+PGP public key below.  Expect a response within 5 business days.  Any proposed
+embargo date should be at least 30 days and no more than 90 days in the future.
+
+> *Note:* If you've found a software defect that allows a *program* to gain
+> unauthorized access or privileges on the host computer or causes the program
+> to crash, that defect should be reported as an ordinary project issue at
+> <https://github.com/michaelrsweet/hp-printer-app/issues>.
 
 
 Responsible Disclosure
@@ -53,14 +67,6 @@ example:
     1.0b1
     1.0b2
     1.0rc1
-
-
-Reporting a Vulnerability
--------------------------
-
-Report all security issues to "security AT msweet.org".  Expect a response
-within 5 business days.  Any proposed embargo date should be at least 30 days
-and no more than 90 days in the future.
 
 
 PGP Public Key
