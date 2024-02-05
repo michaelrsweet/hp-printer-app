@@ -55,7 +55,7 @@ sysconfdir	=	@sysconfdir@
 top_srcdir	=	@top_srcdir@
 unitdir		=	@unitdir@
 
-BUILDROOT	=	$(DSTROOT)$(RPM_BUILD_ROOT)$(DESTDIR)
+BUILDROOT	=	${DSTROOT}${RPM_BUILD_ROOT}${DESTDIR}
 
 
 # Resources...
@@ -95,13 +95,12 @@ clean:
 	rm -f $(TARGETS) $(OBJS)
 
 install:	$(TARGETS)
-	echo "Installing program to $(bindir)..."
+	echo "Installing program to $(BUILDROOT)$(bindir)..."
 	$(INSTALL) -d -m 755 $(BUILDROOT)$(bindir)
 	$(INSTALL) -c -m 755 hp-printer-app $(BUILDROOT)$(bindir)
-	echo "Installing documentation to $(mandir)..."
+	echo "Installing documentation to $(BUILDROOT)$(mandir)..."
 	$(INSTALL) -d -m 755 $(BUILDROOT)$(mandir)/man1
 	$(INSTALL) -c -m 644 hp-printer-app.1 $(BUILDROOT)$(mandir)/man1
-	cp hp-printer-app.1 $(mandir)/man1
 	if test `uname` = Darwin; then \
 	    echo "Installing launchd service to $(BUILDROOT)/Library/LaunchDaemons..."; \
 	    $(INSTALL) -d -m 755 $(BUILDROOT)/Library/LaunchDaemons; \
