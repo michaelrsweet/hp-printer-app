@@ -116,7 +116,7 @@ hp-printer-app:	hp-printer-app.o
 	$(CC) $(LDFLAGS) -o $@ hp-printer-app.o $(LIBS)
 	if test `uname` = Darwin; then \
 	    echo "Code-signing $@..."; \
-	    codesign $(CSFLAGS) --prefix org.msweet $@; \
+	    codesign $(CSFLAGS) --prefix org.msweet. $@; \
 	fi
 
 decode-pcl6:	decode-pcl6.o
@@ -124,7 +124,7 @@ decode-pcl6:	decode-pcl6.o
 	$(CC) $(LDFLAGS) -o $@ decode-pcl6.o
 	if test `uname` = Darwin; then \
 	    echo "Code-signing $@..."; \
-	    codesign $(CSFLAGS) --prefix org.msweet $@; \
+	    codesign $(CSFLAGS) --prefix org.msweet. $@; \
 	fi
 
 $(OBJS):	icons.h Makefile
@@ -139,26 +139,10 @@ makeicons:
 # Set the APPLEID, CODESIGN_IDENTITY, PKGSIGN_IDENTITY, and TEAMID environment
 # variables from the Apple developer pages.
 macos:
-	make clean
-	make OPTIM="-g -Os -mmacosx-version-min=10.14 -arch x86_64 -arch arm64" all
-	echo "Creating macOS app bundle..."
-	rm -rf /private/tmp/hp-printer-app-$(VERSION)
-	make DESTDIR="/private/tmp/hp-printer-app-$(VERSION)" install
-	$(INSTALL) -d "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/MacOS"
-	mv "/private/tmp/hp-printer-app-$(VERSION)$(bindir)/hp-printer-app" "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/MacOS"
-	$(INSTALL) -d "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/Resources"
-	$(INSTALL) -c hp-printer-app.icns "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/Resources"
-	$(INSTALL) -c hp-printer-app.plist "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app/Contents/Info.plist"
-	ln -s "/Applications/HP Printer Application.app/Contents/MacOS/hp-printer-app" "/private/tmp/hp-printer-app-$(VERSION)$(bindir)/hp-printer-app"
-	$(INSTALL) -d "/private/tmp/hp-printer-app-$(VERSION)/Library/Application Support/cups/ssl"
-	echo "Signing macOS app bundle..."
-	codesign $(CSFLAGS) -f --entitlements hp-printer-app.entitlements "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app"
-	$(INSTALL) -d  "/private/tmp/hp-printer-app-$(VERSION)/Library/LaunchDaemons"
-	$(INSTALL) -c org.msweet.hp-printer-app.plist "/private/tmp/hp-printer-app-$(VERSION)/Library/LaunchDaemons"
 	echo "Creating archive for notarization..."
 	rm -f hp-printer-app.zip
-	ditto -c -k --keepParent "/private/tmp/hp-printer-app-$(VERSION)/Applications/HP Printer Application.app" hp-printer-app.zip
-	echo Notarizing application
+	zip -v9 hp-printer-app.zip hp-printer-app
+	echo "Notarizing application..."
 	xcrun notarytool submit hp-printer-app.zip \
 	    --apple-id "$${APPLEID}" \
 	    --keychain-profile "AC_$${TEAMID}" \
@@ -166,6 +150,8 @@ macos:
 	    --wait
 	rm -f hp-printer-app.zip
 	echo "Creating the macOS package..."
+	rm -rf /private/tmp/hp-printer-app-$(VERSION)
+	make DESTDIR="/private/tmp/hp-printer-app-$(VERSION)" install
 	pkgbuild --root /private/tmp/hp-printer-app-$(VERSION) \
 	    --identifier org.msweet.hp-printer-app \
 	    --version $(VERSION) \
