@@ -1,8 +1,8 @@
 Changes in HP Printer Application
 =================================
 
-v1.3.0 - Month DD, YYYY
------------------------
+v1.3.0 - February 9, 2024
+-------------------------
 
 - Switched to using a configure script.
 - Updated documentation for current PAPPL.
