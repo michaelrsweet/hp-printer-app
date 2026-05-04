@@ -1,7 +1,7 @@
 HP Printer Application Documentation
 ====================================
 
-HP Printer Application v1.2.2
+HP Printer Application v1.3.0
 Copyright 2019-2024 by Michael R Sweet
 
 `hp-printer-app` is licensed under the Apache License Version 2.0.  See the
