@@ -1,7 +1,7 @@
 #
 # Makefile for the HP Printer Application
 #
-# Copyright © 2020-2024 by Michael R Sweet
+# Copyright © 2020-2026 by Michael R Sweet
 #
 # Licensed under Apache License v2.0.  See the file "LICENSE" for more
 # information.
@@ -22,7 +22,7 @@ VERSION		=	@VERSION@
 ASAN_OPTIONS	=	leak_check_at_exit=false
 CC		=	@CC@
 CFLAGS		=	-I.. @CFLAGS@ $(CPPFLAGS) $(OPTIM) $(WARNINGS)
-CPPFLAGS	=	@CPPFLAGS@ '-DVERSION="$(VERSION)"'
+CPPFLAGS	=	@CPPFLAGS@ '-DVERSION="$(VERSION)"' @WITH_PCL6@
 CSFLAGS		=	-s "$${CODESIGN_IDENTITY:=-}" --timestamp @CSFLAGS@
 INSTALL		=	@INSTALL@
 LDFLAGS		=	@LDFLAGS@ $(OPTIM)

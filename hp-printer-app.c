@@ -1,7 +1,7 @@
 //
 // HP-Printer app for the Printer Application Framework
 //
-// Copyright © 2020-2024 by Michael R Sweet.
+// Copyright © 2020-2026 by Michael R Sweet.
 //
 // Licensed under Apache License v2.0.  See the file "LICENSE" for more
 // information.
@@ -395,7 +395,7 @@ static void	pcl6_write_data(pappl_device_t *device, const unsigned char *buffer,
 //static void	pcl6_write_string(pappl_device_t *device, const char *s, enum pcl6_attr attr);
 static void	pcl6_write_ubyte(pappl_device_t *device, unsigned n, enum pcl6_attr attr);
 static void	pcl6_write_uint16(pappl_device_t *device, unsigned n, enum pcl6_attr attr);
-static void	pcl6_write_uint32(pappl_device_t *device, unsigned n, enum pcl6_attr attr);
+//static void	pcl6_write_uint32(pappl_device_t *device, unsigned n, enum pcl6_attr attr);
 static void	pcl6_write_xy(pappl_device_t *device, unsigned x, unsigned y, enum pcl6_attr attr);
 #endif // WITH_PCL6
 
@@ -1598,14 +1598,16 @@ pcl_rwriteline(
   if (!(y & 127))
     papplLogJob(job, PAPPL_LOGLEVEL_DEBUG, "Printing line %u (%u%%)", y, 100 * (y - pcl->ystart) / pcl->height);
 
+  // Get the white pixel byte value to look for...
+  byte = options->header.cupsColorSpace == CUPS_CSPACE_K ? 0 : 255;
+
+  // Output/compress...
   switch (pcl->driver)
   {
     case HP_DRIVER_DESKJET :
     case HP_DRIVER_GENERIC :
     case HP_DRIVER_LASERJET :
 	// Check whether the line is all whitespace...
-	byte = options->header.cupsColorSpace == CUPS_CSPACE_K ? 0 : 255;
-
 	if (*pixels != byte || memcmp(pixels, pixels + 1, header->cupsBytesPerLine - 1))
 	{
 	  // No, skip previous whitespace as needed...
@@ -1982,6 +1984,7 @@ pcl6_write_uint16(
 }
 
 
+#if 0 // Not currently used/needed...
 //
 // 'pcl6_write_uint32()' - Write a 32-bit unsigned integer attribute.
 //
@@ -2016,6 +2019,7 @@ pcl6_write_uint32(
 
   papplDeviceWrite(device, buffer, (size_t)(bufptr - buffer));
 }
+#endif // 0
 
 
 //

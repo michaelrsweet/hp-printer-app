@@ -30,8 +30,8 @@ Requirements
 
 - A POSIX-compliant "make" program (both GNU and BSD make are known to work),
 - A C99 compiler (both Clang and GCC are known to work),
-- [PAPPL](https://www.msweet.org/pappl) 1.1 or later.
-- [CUPS](https://openprinting.github.io/cups) 2.2 or later (for libcups).
+- [PAPPL](https://www.msweet.org/pappl) 1.2 or later.
+- [CUPS](https://openprinting.github.io/cups) 2.4 or later (for libcups).
 
 
 Installing
@@ -47,7 +47,7 @@ to install it and start the server:
     sudo snap start hp-printer-app.hp-printer-app-server
 
 A package file is included with all source releases on Github for use on macOS
-10.14 and higher for both Intel and Apple Silicon.
+11 and higher for both Intel and Apple Silicon.
 
 If you need to install `hp-printer-app` from source, you'll need a "make"
 program, a C99 compiler (Clang and GCC work), the CUPS developer files, and the
@@ -135,19 +135,23 @@ The following printers are currently supported:
 - Laser printers with PCL 5 support from Canon, IBM, Lexmark, Kyocera, Ricoh,
   Xerox, etc.
 
+Experimental support is also available for PCL 6 printers, however not all
+printers support all PCL 6 features, e.g., a color laser printer might only
+support B&W PCL 6.
+
 
 Standards
 ---------
 
-Through PAPPL, `hp-printer-app` implements PWG 5100.14-2013: IPP Everywhere™
-for each printer, and has a partial implementation of PWG 5100.22-2019: IPP
-System Service v1.0 for managing the print queues and default printer.
+Through PAPPL, `hp-printer-app` implements PWG 5100.14-2020: IPP Everywhere™
+v1.1 for each printer, and has a partial implementation of PWG 5100.22-2025:
+IPP System Service v1.1 for managing the print queues and default printer.
 
 
 Legal Stuff
 -----------
 
-The HP Printer Application is Copyright © 2019-2024 by Michael R Sweet.
+The HP Printer Application is Copyright © 2019-2026 by Michael R Sweet.
 
 This software is licensed under the Apache License Version 2.0.  See the files
 "LICENSE" and "NOTICE" for more information.

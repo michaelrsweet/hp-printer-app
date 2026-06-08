@@ -1,8 +1,14 @@
 Changes in HP Printer Application
 =================================
 
-v1.3.0 - February 9, 2024
--------------------------
+v1.3.1 - YYYY-MM-DD
+-------------------
+
+- Fixed the `--enable-experimental` configure option to enable the PCL 6 driver.
+
+
+v1.3.0 - 2024-02-09
+-------------------
 
 - Switched to using a configure script.
 - Updated documentation for current PAPPL.
@@ -10,8 +16,8 @@ v1.3.0 - February 9, 2024
 - Updated macOS and Linux binaries to use PAPPL 1.4.x.
 
 
-v1.2.0 - May 15, 2022
----------------------
+v1.2.0 - 2022-05-15
+-------------------
 
 - Fixed default listen address when running as a server (Issue #7)
 - Fixed the media size list which prevented A4 from showing up (Issue #8)

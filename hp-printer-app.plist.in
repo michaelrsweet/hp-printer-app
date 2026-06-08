@@ -17,7 +17,7 @@
 	<string>English</string>
 
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2019-2022 by Michael R Sweet</string>
+	<string>Copyright © 2019-2026 by Michael R Sweet</string>
 
 	<key>CFAppleHelpAnchor</key>
 	<string>help</string>
@@ -38,6 +38,6 @@
 	<string>@VERSION@</string>
 
 	<key>CFBundleGetInfoString</key>
-	<string>@VERSION@, Copyright © Michael R Sweet 2019-2022</string>
+	<string>@VERSION@, Copyright © Michael R Sweet 2019-2026</string>
     </dict>
 </plist>
