@@ -64,6 +64,6 @@ parts:
 
     hp-printer-app:
         plugin: autotools
-        autotools-configure-parameters: [--prefix=/]
+        autotools-configure-parameters: [--prefix=/ --enable-experimental]
         source: .
         after: [libcups3, pappl, hooks, scripts]
