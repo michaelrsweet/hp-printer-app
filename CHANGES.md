@@ -4,6 +4,9 @@ Changes in HP Printer Application
 v1.3.1 - YYYY-MM-DD
 -------------------
 
+- Improved PCL compression code.
+- Fixed CMYK output.
+- Fixed a few PCL 6 output bugs.
 - Fixed the `--enable-experimental` configure option to enable the PCL 6 driver.
 
 

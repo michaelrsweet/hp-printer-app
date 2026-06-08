@@ -877,72 +877,105 @@ pcl_compress_data(
     unsigned            plane)		// I - Color plane
 {
   const unsigned char	*line_ptr,	// Current byte pointer
-			*line_end,	// End-of-line byte pointer
-			*start;		// Start of compression sequence
+			*line_lptr,	// Start of literal sequence
+			*line_rptr,	// Start of repeated sequence
+			*line_end;	// End-of-line byte pointer
   unsigned char		*comp_ptr;	// Pointer into compression buffer
-  unsigned		count;		// Count of bytes for output
+  unsigned		count,		// Current count
+			lcount,		// Count of literal bytes for output
+			rcount;		// Count of repeated bytes for output
   int			comp;		// Current compression type
 
 
-  // Try doing TIFF PackBits compression...
-  line_ptr = line;
-  line_end = line + length;
+  // Try TIFF PackBits compression over the line buffer...
+  line_ptr = line_lptr = line;
+  line_end = line + length - 1;
   comp_ptr = pcl->comp_buffer;
 
-  while (line_ptr < line_end)
+  while (line_lptr <= line_end)
   {
-    if ((line_ptr + 1) >= line_end)
-    {
-      // Single byte on the end...
-      *comp_ptr++ = 0x00;
-      *comp_ptr++ = *line_ptr++;
-    }
-    else if (line_ptr[0] == line_ptr[1])
-    {
-      // Repeated sequence...
-      line_ptr ++;
-      count = 2;
+    // Scan for literal and repeated sequences...
+    lcount = line_ptr - line_lptr;
+    rcount = 0;
 
-      while (line_ptr < (line_end - 1) && line_ptr[0] == line_ptr[1] && count < 128)
-      {
+    while (line_ptr <= line_end)
+    {
+      // Extend literal sequence, if any...
+      while (line_ptr < line_end && line_ptr[0] != line_ptr[1])
 	line_ptr ++;
-	count ++;
+
+      lcount = line_ptr - line_lptr;
+      rcount = 0;
+
+      if (line_ptr == line_end)
+      {
+        // Last byte, stop here...
+	line_ptr ++;
+	lcount ++;
+	break;
       }
 
-      *comp_ptr++ = (unsigned char)(257 - count);
-      *comp_ptr++ = *line_ptr++;
-    }
-    else
-    {
-      // Non-repeated sequence...
-      start    = line_ptr;
-      line_ptr ++;
-      count    = 1;
+      // Count a run...
+      line_rptr = line_ptr;
 
-      while (line_ptr < (line_end - 1) && line_ptr[0] != line_ptr[1] && count < 128)
+      while (line_ptr < line_end && line_ptr[0] == line_ptr[1])
       {
 	line_ptr ++;
-	count ++;
+	rcount ++;
       }
+
+      line_ptr ++;
+      rcount ++;
+
+      // Only stop to encode if the repeated sequence is long enough to make sense...
+      if (rcount > 2 || line_rptr == line_lptr)
+        break;
+    }
+
+    // Encode literal byte sequences...
+    while (lcount > 0)
+    {
+      if (lcount > 128)
+	count = 128;
+      else
+	count = lcount;
 
       *comp_ptr++ = (unsigned char)(count - 1);
-
-      memcpy(comp_ptr, start, count);
+      memcpy(comp_ptr, line_lptr, count);
       comp_ptr += count;
+      line_lptr += count;
+      lcount -= count;
     }
+
+    // Encode repeated byte sequences...
+    while (rcount > 1)
+    {
+      if (rcount > 128)
+	count = 128;
+      else
+	count = rcount;
+
+      *comp_ptr++ = (unsigned char)(257 - count);
+      *comp_ptr++ = *line_rptr;
+      rcount -= count;
+    }
+
+    // Reset the literal pointer and continue...
+    line_lptr = line_ptr - rcount;
   }
 
+  // See if it was worth compressing...
   if ((unsigned)(comp_ptr - pcl->comp_buffer) > length)
   {
-    // Don't try compressing...
+    // No, don't use compression...
     comp = 0;
   }
   else
   {
-    // Use PackBits compression...
-    comp     = 2;
-    line_ptr = pcl->comp_buffer;
-    line_end = comp_ptr;
+    // Yes, use PackBits compression...
+    comp   = 2;
+    line   = pcl->comp_buffer;
+    length = comp_ptr - pcl->comp_buffer;
   }
 
   switch (pcl->driver)
@@ -959,24 +992,24 @@ pcl_compress_data(
 	}
 
 	// Set the length of the data and write a raster plane...
-	papplDevicePrintf(device, "\033*b%d%c", (int)(line_end - line_ptr), plane < (pcl->num_planes - 1) ? 'V' : 'W');
-	papplDeviceWrite(device, line_ptr, (size_t)(line_end - line_ptr));
+	papplDevicePrintf(device, "\033*b%d%c", (int)length, plane < (pcl->num_planes - 1) ? 'V' : 'W');
+	papplDeviceWrite(device, line, (size_t)length);
 	break;
 
 #if WITH_PCL6
     case HP_DRIVER_GENERIC6 :
     case HP_DRIVER_GENERIC6C :
-        count = (unsigned)(line_end - line_ptr);
         if (!comp)
-          count = (count + 3) & ~3;	// Pad to 32-bit boundary
+          length = (length + 3) & ~3;	// Pad to 32-bit boundary
 
         pcl6_write_uint16(device, y - pcl->ystart, PCL6_ATTR_START_LINE);
         pcl6_write_uint16(device, 1, PCL6_ATTR_BLOCK_HEIGHT);
         pcl6_write_ubyte(device, comp ? PCL6_E_RLE_COMPRESSION : PCL6_E_NO_COMPRESSION, PCL6_ATTR_COMPRESS_MODE);
-//	pcl6_write_ubyte(device, 1, PCL6_ATTR_PAD_BYTES_MULTIPLE);
-//        pcl6_write_uint32(device, count, PCL6_ATTR_BLOCK_BYTE_LENGTH);
+        if (comp)
+	  pcl6_write_ubyte(device, 1, PCL6_ATTR_PAD_BYTES_MULTIPLE);
+//	  pcl6_write_uint32(device, length, PCL6_ATTR_BLOCK_BYTE_LENGTH);
         pcl6_write_command(device, PCL6_CMD_READ_IMAGE);
-        pcl6_write_data(device, line_ptr, count);
+        pcl6_write_data(device, line, length);
         break;
 #endif // WITH_PCL6
   }
@@ -1553,7 +1586,7 @@ pcl_rstartpage(
   pcl->feed = 0;
 
   // Allocate memory for compression...
-  if ((pcl->comp_buffer = malloc(pcl->linesize * 2 + 2)) == NULL)
+  if ((pcl->comp_buffer = malloc(pcl->linesize + (pcl->linesize + 127) / 128)) == NULL)
   {
     papplLogJob(job, PAPPL_LOGLEVEL_ERROR, "Memory allocation failure.");
     return (false);
@@ -1646,6 +1679,16 @@ pcl_rwriteline(
 	      }
 	      else
 		bit /= 2;
+	    }
+
+	    if (bit < 128)
+	    {
+	      // Capture the last black byte...
+	      *kptr = *cptr & *mptr & *yptr;
+	      byte  = ~*kptr;
+	      *cptr &= byte;
+	      *mptr &= byte;
+	      *yptr &= byte;
 	    }
 	  }
 	  else if (header->cupsBitsPerPixel == 8)
@@ -1873,7 +1916,7 @@ pcl6_write_data(
 }
 
 
-#if 0
+#if 0 // Not currently used/needed...
 //
 // 'pcl6_write_string()' - Write a single string attribute with optional command.
 //
