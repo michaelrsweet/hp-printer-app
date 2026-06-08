@@ -1,7 +1,7 @@
 Changes in HP Printer Application
 =================================
 
-v1.3.1 - YYYY-MM-DD
+v1.3.1 - 2026-06-08
 -------------------
 
 - Improved PCL compression code.
