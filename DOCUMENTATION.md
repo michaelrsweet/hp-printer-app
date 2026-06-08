@@ -65,6 +65,9 @@ install it and start the server:
     sudo snap connect hp-printer-app:avahi-control avahi:avahi-control
     sudo snap start hp-printer-app.hp-printer-app-server
 
+ArchLinux and other Linux distributions also provide native packages for
+`hp-printer-app` that you can use.
+
 A package file is included with all source releases on Github for use on macOS
 11 and higher for both Intel and Apple Silicon.
 
